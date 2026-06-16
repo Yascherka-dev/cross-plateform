@@ -86,7 +86,7 @@ class SupabaseService {
 
       if (list.isEmpty) {
         debugPrint('emergency_numbers vide — vérifier les politiques RLS dans Supabase');
-        return _emergencyFallback;
+        return emergencyFallback;
       }
 
       return List<Map<String, dynamic>>.from(
@@ -94,12 +94,13 @@ class SupabaseService {
       );
     } catch (e) {
       debugPrint('Supabase emergency_numbers indisponible, fallback local: $e');
-      return _emergencyFallback;
+      return emergencyFallback;
     }
   }
 
   // Numéros d'urgence locaux — partagés entre le fallback catch et le fallback RLS
-  static const List<Map<String, dynamic>> _emergencyFallback = [
+  // Public pour que advice_screen puisse l'utiliser comme fallback snapshot
+  static const List<Map<String, dynamic>> emergencyFallback = [
     {'numero': '15',   'label': 'SAMU',                'description': 'Urgences médicales',                         'ordre': 1},
     {'numero': '18',   'label': 'Pompiers',             'description': 'Secours et incendie',                        'ordre': 2},
     {'numero': '3114', 'label': 'Prévention suicide',   'description': 'Numéro national de prévention du suicide',   'ordre': 3},

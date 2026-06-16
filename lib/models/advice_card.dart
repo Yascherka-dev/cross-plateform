@@ -27,6 +27,7 @@ class AdviceCard {
       titre:          json['titre'] as String,
       niveau:         HeatRiskLevel.values.firstWhere(
                         (e) => e.name == json['niveau'],
+                        orElse: () => HeatRiskLevel.vert,
                       ),
       conseils:       List<String>.from(json['conseils'] as List),
       numerosUrgence: List<String>.from(json['numeros_urgence'] as List),

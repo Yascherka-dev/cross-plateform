@@ -51,10 +51,9 @@ class WeatherData {
 
       // reduce() parcourt toute la liste et garde la valeur max
       // C'est le pic de température prévu sur les 24h de la journée
-      peakTemp: hourlyTemp.reduce((a, b) => a > b ? a : b),
+      peakTemp: hourlyTemp.fold(0.0, (a, b) => a > b ? a : b),
 
-      // Même logique pour le pic UV journalier
-      peakUv: hourlyUv.reduce((a, b) => a > b ? a : b),
+      peakUv: hourlyUv.fold(0.0, (a, b) => a > b ? a : b),
 
       // On horodate la récupération pour gérer le cache (15 min max)
       horodatage: DateTime.now(),
