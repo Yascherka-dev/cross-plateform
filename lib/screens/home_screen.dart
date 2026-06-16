@@ -66,12 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
       uvNow:     weather.uvNow,
       peakTemp:  weather.peakTemp,
       peakUv:    weather.peakUv,
-      seuilTempOrange: (orange?['seuil_temp']       as num?)?.toDouble() ?? 30.0,
-      seuilTempRouge:  (rouge?['seuil_temp']        as num?)?.toDouble() ?? 35.0,
-      seuilUvOrange:   (orange?['seuil_uv']         as num?)?.toDouble() ?? 6.0,
-      seuilUvRouge:    (rouge?['seuil_uv']          as num?)?.toDouble() ?? 8.0,
-      humiditeBoost1:  (orange?['humidite_boost_1'] as num?)?.toInt()    ?? 60,
-      humiditeBoost2:  (orange?['humidite_boost_2'] as num?)?.toInt()    ?? 70,
+      seuilTempOrange: (orange!['seuil_temp']       as num).toDouble(),
+      seuilTempRouge:  (rouge!['seuil_temp']        as num).toDouble(),
+      seuilUvOrange:   (orange['seuil_uv']          as num).toDouble(),
+      seuilUvRouge:    (rouge['seuil_uv']           as num).toDouble(),
+      humiditeBoost1:  (orange['humidite_boost_1']  as num).toInt(),
+      humiditeBoost2:  (orange['humidite_boost_2']  as num).toInt(),
     );
 
     return {

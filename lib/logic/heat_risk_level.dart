@@ -17,12 +17,12 @@ HeatRiskLevel calculateHeatRisk({
   required double peakTemp,   // pic de température sur 24h (max hourly)
   required double peakUv,     // pic UV sur 24h (max hourly)
   // Seuils configurables via Supabase — valeurs par défaut = constantes métier initiales
-  double seuilTempOrange = 30.0, // température effective déclenchant ORANGE
-  double seuilTempRouge  = 35.0, // température effective déclenchant ROUGE
-  double seuilUvOrange   = 6.0,  // UV déclenchant ORANGE
-  double seuilUvRouge    = 8.0,  // UV déclenchant ROUGE
-  int    humiditeBoost1  = 60,   // > humiditeBoost1% → +1°C effectif
-  int    humiditeBoost2  = 70,   // > humiditeBoost2% → +2°C effectif
+  required double seuilTempOrange,
+  required double seuilTempRouge,
+  required double seuilUvOrange,
+  required double seuilUvRouge,
+  required int    humiditeBoost1,
+  required int    humiditeBoost2,
 }) {
 
   // On prend le pire entre température réelle et ressentie

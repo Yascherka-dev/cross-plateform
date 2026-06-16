@@ -42,33 +42,11 @@ class SupabaseService {
   // Retourne une Map keyed par niveau ('orange' | 'rouge') pour un accès direct
   // Fallback: valeurs identiques aux constantes dans heat_risk_level.dart
   Future<Map<String, Map<String, dynamic>>> fetchHeatThresholds() async {
-    try {
-      final data = await _client
-          .from('heat_thresholds')
-          .select();
-
-      return {
-        for (final row in data as List)
-          row['niveau'] as String: Map<String, dynamic>.from(row as Map),
-      };
-    } catch (e) {
-      debugPrint('Supabase heat_thresholds indisponible, fallback local: $e');
-      // Valeurs correspondant exactement aux seuils dans heat_risk_level.dart
-      return {
-        'orange': {
-          'seuil_temp': 30.0,
-          'seuil_uv':   6.0,
-          'humidite_boost_1': 60,
-          'humidite_boost_2': 70,
-        },
-        'rouge': {
-          'seuil_temp': 35.0,
-          'seuil_uv':   8.0,
-          'humidite_boost_1': 60,
-          'humidite_boost_2': 70,
-        },
-      };
-    }
+    final data = await _client.from('heat_thresholds').select();
+    return {
+      for (final row in data as List)
+        row['niveau'] as String: Map<String, dynamic>.from(row as Map),
+    };
   }
 
   // Récupère les numéros d'urgence depuis la table `emergency_numbers`
