@@ -17,6 +17,21 @@ class AdviceCard {
     required this.conseils,
     required this.numerosUrgence,
   });
+
+  // Désérialisation depuis la table Supabase `advice_cards`
+  // Le champ `niveau` est stocké en texte ('vert'/'orange'/'rouge')
+  // et converti en enum via le nom du membre
+  factory AdviceCard.fromJson(Map<String, dynamic> json) {
+    return AdviceCard(
+      id:             json['id']    as String,
+      titre:          json['titre'] as String,
+      niveau:         HeatRiskLevel.values.firstWhere(
+                        (e) => e.name == json['niveau'],
+                      ),
+      conseils:       List<String>.from(json['conseils'] as List),
+      numerosUrgence: List<String>.from(json['numeros_urgence'] as List),
+    );
+  }
 }
 
 // Liste complète des fiches conseils de l'app

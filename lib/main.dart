@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/secrets.dart';
 import 'screens/home_screen.dart';
 
 // Point d'entrée de l'application Flutter
 // C'est la première fonction appelée au lancement de l'app
-void main() {
+Future<void> main() async {
   // Garantit que Flutter est initialisé avant tout appel natif
-  // (géolocalisation, permissions...) — obligatoire avant runApp()
+  // (géolocalisation, permissions, Supabase...) — obligatoire avant runApp()
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialisation de Supabase — doit être appelée avant runApp()
+  // Les credentials sont dans lib/config/secrets.dart (gitignorée)
+  await Supabase.initialize(
+    url:            supabaseUrl,
+    publishableKey: supabaseAnonKey,
+  );
 
   // Lance l'application en passant le widget racine
   runApp(const SosCaniculeApp());
