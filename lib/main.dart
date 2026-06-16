@@ -30,7 +30,7 @@ class SosCaniculeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       // Nom affiché dans le gestionnaire de tâches du téléphone
-      title: 'SOS Canicule Paris',
+      title: 'SOS Canicule',
 
       // Cache le bandeau rouge "DEBUG" en haut à droite
       debugShowCheckedModeBanner: false,

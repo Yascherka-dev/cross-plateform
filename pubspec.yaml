@@ -1,5 +1,5 @@
 name: app1
-description: "A new Flutter project."
+description: "SOS Canicule — alertes chaleur et points de fraîcheur à Paris"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -27,9 +27,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Génération automatique des icônes d'app pour Android et iOS
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  # Source: le plus grand logo disponible
+  image_path: "assets/images/logo128.png"
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/
 
   # Police Marianne — fonte officielle de la République française
   # Famille complète avec tous les graisses et italiques
