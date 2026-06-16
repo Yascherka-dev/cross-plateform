@@ -302,15 +302,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.fondDsfr,
 
-      // APPBAR style DSFR avec drapeau français et nom de l'app
+      // APPBAR avec logo de l'app et nom
       appBar: AppBar(
         title: Row(
           children: [
-            // Drapeau français: 3 rectangles colorés côte à côte
-            Container(width: 8, height: 20, color: AppTheme.bleuRepublique),
-            Container(width: 8, height: 20, color: Colors.white),
-            Container(width: 8, height: 20, color: AppTheme.rougeTricolore),
-            const SizedBox(width: 12),
+            // Logo de l'app à taille AppBar (32px de hauteur)
+            Image.asset(
+              'assets/images/logo48.png',
+              height: 32,
+            ),
+            const SizedBox(width: 10),
             const Text(
               'SOS Canicule',
               style: TextStyle(
