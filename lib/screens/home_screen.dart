@@ -216,7 +216,13 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.fondDsfr,
 
       appBar: AppBar(
-        title: const Text('SOS Canicule'),
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo48.png', height: 32),
+            const SizedBox(width: 10),
+            const Text('SOS Canicule'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

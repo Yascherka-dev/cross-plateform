@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-
-  // -------------------------
-  // PALETTE — 8 couleurs max
-  // -------------------------
-
   // Neutres
   static const Color fondDsfr       = Color(0xFFF0F4FF); // fond de page bleu pastel
   static const Color bordureDsfr    = Color(0xFFE5E7EB); // séparateurs et bordures

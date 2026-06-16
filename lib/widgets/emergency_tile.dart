@@ -22,14 +22,20 @@ class EmergencyTile extends StatelessWidget {
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: SizedBox(
-        width: 44,
+      leading: Container(
+        width: 52,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppTheme.urgenceFond,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.bleuRepublique, width: 1),
+        ),
+        alignment: Alignment.center,
         child: Text(
           numero,
-          textAlign: TextAlign.center,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 16,
+            fontSize: 15,
             color: AppTheme.bleuRepublique,
           ),
         ),
