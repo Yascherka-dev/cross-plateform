@@ -3,8 +3,6 @@ import '../config/app_theme.dart';
 import '../logic/heat_risk_level.dart';
 import '../models/weather_data.dart';
 
-// Bannière principale affichant le niveau de risque et les métriques météo
-// C'est le SEUL endroit où les couleurs vert/orange/rouge sont utilisées
 class RiskBanner extends StatelessWidget {
   final HeatRiskLevel riskLevel;
   final WeatherData weather;
@@ -15,7 +13,15 @@ class RiskBanner extends StatelessWidget {
     required this.weather,
   });
 
-  Color get _color {
+  Color get _fond {
+    switch (riskLevel) {
+      case HeatRiskLevel.vert:   return AppTheme.vertFond;
+      case HeatRiskLevel.orange: return AppTheme.orangeFond;
+      case HeatRiskLevel.rouge:  return AppTheme.rougeFond;
+    }
+  }
+
+  Color get _texte {
     switch (riskLevel) {
       case HeatRiskLevel.vert:   return AppTheme.vertDsfr;
       case HeatRiskLevel.orange: return AppTheme.orangeDsfr;
@@ -37,25 +43,26 @@ class RiskBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _color,
-        borderRadius: BorderRadius.circular(4),
+        color: _fond,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _texte, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+            style: TextStyle(
+              color: _texte,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '${weather.temperature.toStringAsFixed(1)}°C',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _texte,
               fontSize: 48,
               fontWeight: FontWeight.w700,
             ),
@@ -65,19 +72,13 @@ class RiskBanner extends StatelessWidget {
             'Ressenti ${weather.feelsLike.toStringAsFixed(1)}°C '
             '• UV ${weather.uvNow.toStringAsFixed(1)} '
             '• Humidité ${weather.humidity}%',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: _texte, fontSize: 14),
           ),
           const SizedBox(height: 2),
           Text(
             "Pic aujourd'hui: ${weather.peakTemp.toStringAsFixed(1)}°C "
             '• UV max ${weather.peakUv.toStringAsFixed(1)}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: _texte, fontSize: 13),
           ),
         ],
       ),

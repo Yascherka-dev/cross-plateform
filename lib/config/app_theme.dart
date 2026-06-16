@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 
-// Thème global de l'app SOS Canicule
-// Palette réduite à l'essentiel: sobre, plat, lisible
-// Inspiration: service-public.fr, app Météo France
 class AppTheme {
 
   // -------------------------
-  // PALETTE PRINCIPALE
-  // 6 couleurs maximum dans toute l'app
+  // PALETTE — 8 couleurs max
   // -------------------------
-  static const Color bleuRepublique = Color(0xFF000091); // primaire, liens, icônes actives
-  static const Color fondDsfr       = Color(0xFFF5F5FE); // fond de page uniquement
-  static const Color bordureDsfr    = Color(0xFFDDDDDD); // séparateurs et bordures
-  static const Color titreDsfr      = Color(0xFF1E1E1E); // texte principal
-  static const Color griseTexteDsfr = Color(0xFF666666); // texte secondaire
 
-  // Couleurs de niveau de risque
-  // Utilisées UNIQUEMENT sur la bannière principale (RiskBanner)
-  static const Color vertDsfr   = Color(0xFF18753C); // niveau VERT
-  static const Color orangeDsfr = Color(0xFFB34000); // niveau ORANGE
-  static const Color rougeDsfr  = Color(0xFFCE0500); // niveau ROUGE
+  // Neutres
+  static const Color fondDsfr       = Color(0xFFF0F4FF); // fond de page bleu pastel
+  static const Color bordureDsfr    = Color(0xFFE5E7EB); // séparateurs et bordures
+  static const Color titreDsfr      = Color(0xFF1A1A2E); // texte principal bleu nuit
+  static const Color griseTexteDsfr = Color(0xFF6B7280); // texte secondaire (unique gris)
+  static const Color bleuRepublique = Color(0xFF3B5BDB); // accent principal
+
+  // Niveaux de risque — fond pastel + texte/bordure saturé
+  static const Color vertFond   = Color(0xFFD3F9D8);
+  static const Color vertDsfr   = Color(0xFF2F9E44); // texte et bordure vert
+  static const Color orangeFond = Color(0xFFFFE8CC);
+  static const Color orangeDsfr = Color(0xFFE67700); // texte et bordure orange
+  static const Color rougeFond  = Color(0xFFFFE3E3);
+  static const Color rougeDsfr  = Color(0xFFC92A2A); // texte et bordure rouge
+
+  // Urgences
+  static const Color urgenceFond = Color(0xFFEDF2FF);
 
   // -------------------------
   // THÈME MATERIAL 3
@@ -32,56 +35,50 @@ class AppTheme {
       surface:   Colors.white,
     ),
 
-    // Police Marianne — fonte officielle de la République française
     fontFamily: 'Marianne',
     scaffoldBackgroundColor: fondDsfr,
 
-    // AppBar: fond blanc, titre bleu République, sans ombre, sans centrage
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
-      foregroundColor: bleuRepublique,
+      foregroundColor: titreDsfr,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
         fontFamily: 'Marianne',
         fontWeight: FontWeight.w700,
         fontSize: 18,
-        color: bleuRepublique,
+        color: titreDsfr,
       ),
     ),
 
-    // Cards: coins 4px, bordure grise fine, sans ombre — style plat DSFR
     cardTheme: CardThemeData(
       elevation: 0,
       color: Colors.white,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(8),
         side: const BorderSide(color: bordureDsfr, width: 1),
       ),
     ),
 
-    // Boutons principaux: bleu République, coins 4px, sans ombre
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: bleuRepublique,
         foregroundColor: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     ),
 
-    // Séparateurs: gris clair, 1px, pas d'espacement supplémentaire
     dividerTheme: const DividerThemeData(
       color: bordureDsfr,
       thickness: 1,
       space: 0,
     ),
 
-    // Navigation bar: fond blanc, indicateur très léger, sans ombre
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       elevation: 0,

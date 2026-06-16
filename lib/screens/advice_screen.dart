@@ -93,6 +93,7 @@ class _AdviceScreenState extends State<AdviceScreen> {
               ),
               const SizedBox(height: 12),
               Card(
+                color: AppTheme.urgenceFond,
                 child: Column(
                   children: [
                     for (int i = 0; i < numbers.length; i++) ...[
