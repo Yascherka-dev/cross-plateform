@@ -47,3 +47,4 @@ app.*.map.json
 # Credentials Supabase — ne jamais committer ce fichier
 # Copier secrets.example.dart → secrets.dart et remplir les valeurs
 lib/config/secrets.dart
+devtools_options.yaml
