@@ -1,0 +1,66 @@
+name: app1
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Appels HTTP (Open-Meteo + OpenData Paris)
+  http: ^1.2.0
+
+  # Géolocalisation GPS
+  geolocator: ^11.0.0
+
+  # Carte interactive
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Police Marianne — fonte officielle de la République française
+  # Famille complète avec tous les graisses et italiques
+  fonts:
+    - family: Marianne
+      fonts:
+        - asset: assets/fonts/Marianne-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Marianne-ThinItalic.ttf
+          weight: 100
+          style: italic
+        - asset: assets/fonts/Marianne-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Marianne-LightItalic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/Marianne-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Marianne-RegularItalic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Marianne-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Marianne-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/Marianne-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Marianne-BoldItalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/Marianne-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Marianne-ExtraBoldItalic.ttf
+          weight: 800
+          style: italic
