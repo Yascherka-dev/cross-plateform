@@ -19,12 +19,21 @@ class SupabaseService {
           .select()
           .order('ordre');
 
-      return (data as List)
+      final list = data as List;
+      debugPrint('Supabase advice_cards: ${list.length} fiches reçues');
+
+      // Si la liste est vide, RLS bloque probablement la lecture
+      // → on active le fallback local plutôt que d'afficher un écran vide
+      if (list.isEmpty) {
+        debugPrint('advice_cards vide — vérifier les politiques RLS dans Supabase');
+        return allAdviceCards;
+      }
+
+      return list
           .map((json) => AdviceCard.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       debugPrint('Supabase advice_cards indisponible, fallback local: $e');
-      // Retourne les fiches locales (toujours disponibles, même hors ligne)
       return allAdviceCards;
     }
   }
@@ -72,37 +81,28 @@ class SupabaseService {
           .select()
           .order('ordre');
 
+      final list = data as List;
+      debugPrint('Supabase emergency_numbers: ${list.length} numéros reçus');
+
+      if (list.isEmpty) {
+        debugPrint('emergency_numbers vide — vérifier les politiques RLS dans Supabase');
+        return _emergencyFallback;
+      }
+
       return List<Map<String, dynamic>>.from(
-        (data as List).map((e) => Map<String, dynamic>.from(e as Map)),
+        list.map((e) => Map<String, dynamic>.from(e as Map)),
       );
     } catch (e) {
       debugPrint('Supabase emergency_numbers indisponible, fallback local: $e');
-      return [
-        {
-          'numero':      '15',
-          'label':       'SAMU',
-          'description': 'Urgences médicales',
-          'ordre':       1,
-        },
-        {
-          'numero':      '18',
-          'label':       'Pompiers',
-          'description': 'Secours et incendie',
-          'ordre':       2,
-        },
-        {
-          'numero':      '3114',
-          'label':       'Prévention suicide',
-          'description': 'Numéro national de prévention du suicide',
-          'ordre':       3,
-        },
-        {
-          'numero':      '112',
-          'label':       'Urgences européennes',
-          'description': 'Numéro européen d\'urgence',
-          'ordre':       4,
-        },
-      ];
+      return _emergencyFallback;
     }
   }
+
+  // Numéros d'urgence locaux — partagés entre le fallback catch et le fallback RLS
+  static const List<Map<String, dynamic>> _emergencyFallback = [
+    {'numero': '15',   'label': 'SAMU',                'description': 'Urgences médicales',                         'ordre': 1},
+    {'numero': '18',   'label': 'Pompiers',             'description': 'Secours et incendie',                        'ordre': 2},
+    {'numero': '3114', 'label': 'Prévention suicide',   'description': 'Numéro national de prévention du suicide',   'ordre': 3},
+    {'numero': '112',  'label': 'Urgences européennes', 'description': "Numéro européen d'urgence",                  'ordre': 4},
+  ];
 }
