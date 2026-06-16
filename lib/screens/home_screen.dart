@@ -6,6 +6,7 @@ import '../models/fresh_spot.dart';
 import '../services/weather_service.dart';
 import '../services/location_service.dart';
 import '../services/fresh_spot_service.dart';
+import '../services/supabase_service.dart';
 import 'map_screen.dart';
 import 'advice_screen.dart';
 
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final WeatherService   _weatherService   = WeatherService();
   final LocationService  _locationService  = LocationService();
   final FreshSpotService _freshSpotService = FreshSpotService();
+  final SupabaseService  _supabaseService  = SupabaseService();
 
   // Index de l'onglet actif dans la bottom nav bar
   // 0 = Accueil / 1 = Carte / 2 = Conseils
@@ -58,8 +60,25 @@ class _HomeScreenState extends State<HomeScreen> {
       position.longitude,
     );
 
-    // ÉTAPE 3: Calcul du niveau de risque — logique métier pure Dart
-    // Combine température, ressenti, UV et humidité
+    // ÉTAPE 3: Fresh spots + seuils Supabase en PARALLÈLE
+    // Les deux sont indépendants l'un de l'autre → on gagne du temps
+    final parallelResults = await Future.wait([
+      _freshSpotService.fetchAllFreshSpots(
+        userLat: position.latitude,
+        userLon: position.longitude,
+      ),
+      _supabaseService.fetchHeatThresholds(),
+    ]);
+
+    final freshSpots = parallelResults[0] as List<FreshSpot>;
+    final thresholds = parallelResults[1] as Map<String, Map<String, dynamic>>;
+
+    // ÉTAPE 4: Calcul du niveau de risque avec les seuils Supabase
+    // Si Supabase est inaccessible, fetchHeatThresholds() retourne le fallback local
+    // → les valeurs par défaut de calculateHeatRisk s'appliquent de toute façon
+    final orange = thresholds['orange'];
+    final rouge  = thresholds['rouge'];
+
     final riskLevel = calculateHeatRisk(
       temp:      weather.temperature,
       feelsLike: weather.feelsLike,
@@ -67,12 +86,12 @@ class _HomeScreenState extends State<HomeScreen> {
       uvNow:     weather.uvNow,
       peakTemp:  weather.peakTemp,
       peakUv:    weather.peakUv,
-    );
-
-    // ÉTAPE 4: Récupération des 3 datasets OpenData Paris en parallèle
-    final freshSpots = await _freshSpotService.fetchAllFreshSpots(
-      userLat: position.latitude,
-      userLon: position.longitude,
+      seuilTempOrange: (orange?['seuil_temp']       as num?)?.toDouble() ?? 30.0,
+      seuilTempRouge:  (rouge?['seuil_temp']        as num?)?.toDouble() ?? 35.0,
+      seuilUvOrange:   (orange?['seuil_uv']         as num?)?.toDouble() ?? 6.0,
+      seuilUvRouge:    (rouge?['seuil_uv']          as num?)?.toDouble() ?? 8.0,
+      humiditeBoost1:  (orange?['humidite_boost_1'] as num?)?.toInt()    ?? 60,
+      humiditeBoost2:  (orange?['humidite_boost_2'] as num?)?.toInt()    ?? 70,
     );
 
     // Toutes les données regroupées dans une Map typée
