@@ -191,10 +191,10 @@ class _MapScreenState extends State<MapScreen> {
 
                       const Divider(),
 
-                      if (spot.adresse.trim().isNotEmpty)
+                      if (spot.adresseFormatee.isNotEmpty)
                         ListTile(
                           leading: const Icon(Icons.location_on_outlined, color: AppTheme.griseTexteDsfr),
-                          title: Text(spot.adresse),
+                          title: Text(spot.adresseFormatee),
                         ),
 
                       if (spot.description.trim().isNotEmpty)

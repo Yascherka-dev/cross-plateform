@@ -48,7 +48,7 @@ class FreshSpotService {
         '${AppConfig.espacesVertsFraisDataset}'
         '?limit=${AppConfig.openDataLimit}'
         '&select=identifiant,nom,type,categorie,proportion_vegetation_haute,'
-        'adresse,statut_ouverture,ouvert_24h,canicule_ouverture,geo_point_2d,'
+        'adresse,arrondissement,statut_ouverture,ouvert_24h,canicule_ouverture,geo_point_2d,'
         'horaires_lundi,horaires_mardi,horaires_mercredi,horaires_jeudi,'
         'horaires_vendredi,horaires_samedi,horaires_dimanche',
       );
@@ -70,7 +70,7 @@ class FreshSpotService {
       final url = Uri.parse(
         '${AppConfig.equipementsFraisDataset}'
         '?limit=${AppConfig.openDataLimit}'
-        '&select=identifiant,nom,type,payant,adresse,statut_ouverture,geo_point_2d,'
+        '&select=identifiant,nom,type,payant,adresse,arrondissement,statut_ouverture,geo_point_2d,'
         'horaires_lundi,horaires_mardi,horaires_mercredi,horaires_jeudi,'
         'horaires_vendredi,horaires_samedi,horaires_dimanche',
       );

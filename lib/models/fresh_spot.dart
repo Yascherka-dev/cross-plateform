@@ -45,9 +45,10 @@ class FreshSpot {
   final double longitude;
   final String description;
   final String adresse;
+  final String? arrondissement;
   final bool estOuvert;
-  final double? distance;              // calculée après récupération API
-  final Map<String, String>? horaires; // null pour fontaines ou si tous les jours vides
+  final double? distance;
+  final Map<String, String>? horaires;
 
   FreshSpot({
     required this.id,
@@ -58,6 +59,7 @@ class FreshSpot {
     required this.description,
     required this.adresse,
     required this.estOuvert,
+    this.arrondissement,
     this.distance,
     this.horaires,
   });
@@ -66,14 +68,12 @@ class FreshSpot {
   factory FreshSpot.fromJsonEspaceVert(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // Ouverture: 3 champs combinés — ouvert_24h, canicule_ouverture, statut_ouverture
     final bool ouvert24h      = json['ouvert_24h'] == 'Oui';
     final bool ouvertCanicule = json['canicule_ouverture'] == 'Oui';
     final String statut       = json['statut_ouverture'] ?? 'Ouvert';
     final bool estOuvert      = ouvert24h || ouvertCanicule ||
         statut.toLowerCase().contains('ouvert');
 
-    // proportion_vegetation_haute → % d'ombrage
     final double ombrage = (json['proportion_vegetation_haute'] ?? 0).toDouble();
     final String ombrageLabel = ombrage > 50
         ? 'Très ombragé'
@@ -82,15 +82,16 @@ class FreshSpot {
             : 'Peu ombragé';
 
     return FreshSpot(
-      id:          json['identifiant']?.toString() ?? 'ev_unknown',
-      nom:         json['nom'] ?? 'Espace vert',
-      type:        FreshSpotType.parc,
-      latitude:    (geo['lat'] ?? 0.0).toDouble(),
-      longitude:   (geo['lon'] ?? 0.0).toDouble(),
-      description: '$ombrageLabel • ${json['categorie'] ?? json['type'] ?? ''}',
-      adresse:     json['adresse'] ?? '',
-      estOuvert:   estOuvert,
-      horaires:    _parseHoraires(json),
+      id:             json['identifiant']?.toString() ?? 'ev_unknown',
+      nom:            json['nom'] ?? 'Espace vert',
+      type:           FreshSpotType.parc,
+      latitude:       (geo['lat'] ?? 0.0).toDouble(),
+      longitude:      (geo['lon'] ?? 0.0).toDouble(),
+      description:    '$ombrageLabel • ${json['categorie'] ?? json['type'] ?? ''}',
+      adresse:        json['adresse'] ?? '',
+      arrondissement: json['arrondissement']?.toString(),
+      estOuvert:      estOuvert,
+      horaires:       _parseHoraires(json),
     );
   }
 
@@ -98,7 +99,6 @@ class FreshSpot {
   factory FreshSpot.fromJsonEquipement(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // statut_ouverture souvent null → ouvert par défaut
     final String statut  = json['statut_ouverture'] ?? '';
     final bool estOuvert = statut.isEmpty ||
         statut.toLowerCase().contains('ouvert');
@@ -106,15 +106,16 @@ class FreshSpot {
     final String payant = json['payant'] == 'Non' ? 'Gratuit' : 'Payant';
 
     return FreshSpot(
-      id:          json['identifiant']?.toString() ?? 'eq_unknown',
-      nom:         json['nom'] ?? 'Équipement frais',
-      type:        FreshSpotType.equipement,
-      latitude:    (geo['lat'] ?? 0.0).toDouble(),
-      longitude:   (geo['lon'] ?? 0.0).toDouble(),
-      description: '${json['type'] ?? 'Équipement'} • $payant',
-      adresse:     json['adresse'] ?? '',
-      estOuvert:   estOuvert,
-      horaires:    _parseHoraires(json), // souvent null en pratique
+      id:             json['identifiant']?.toString() ?? 'eq_unknown',
+      nom:            json['nom'] ?? 'Équipement frais',
+      type:           FreshSpotType.equipement,
+      latitude:       (geo['lat'] ?? 0.0).toDouble(),
+      longitude:      (geo['lon'] ?? 0.0).toDouble(),
+      description:    '${json['type'] ?? 'Équipement'} • $payant',
+      adresse:        json['adresse'] ?? '',
+      arrondissement: json['arrondissement']?.toString(),
+      estOuvert:      estOuvert,
+      horaires:       _parseHoraires(json),
     );
   }
 
@@ -122,44 +123,43 @@ class FreshSpot {
   factory FreshSpot.fromJsonFontaine(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // dispo = "OUI"/"NON" ; motif_ind = raison de l'indisponibilité
     final bool estOuvert   = json['dispo'] == 'OUI';
     final String motif     = json['motif_ind'] ?? '';
     final String descMotif = !estOuvert && motif.isNotEmpty ? ' • $motif' : '';
 
-    // voie + commune remplacent un champ "adresse" absent de ce dataset
     final String typeObjet = json['type_objet'] ?? 'Fontaine';
     final String voie      = json['voie'] ?? '';
     final String commune   = json['commune'] ?? '';
 
     return FreshSpot(
-      id:          json['gid']?.toString() ?? 'f_unknown',
-      nom:         typeObjet,
-      type:        FreshSpotType.fontaine,
-      latitude:    (geo['lat'] ?? 0.0).toDouble(),
-      longitude:   (geo['lon'] ?? 0.0).toDouble(),
-      description: '${json['modele'] ?? ''}$descMotif',
-      adresse:     '$voie, $commune',
-      estOuvert:   estOuvert,
+      id:             json['gid']?.toString() ?? 'f_unknown',
+      nom:            typeObjet,
+      type:           FreshSpotType.fontaine,
+      latitude:       (geo['lat'] ?? 0.0).toDouble(),
+      longitude:      (geo['lon'] ?? 0.0).toDouble(),
+      description:    '${json['modele'] ?? ''}$descMotif',
+      adresse:        voie,
+      arrondissement: commune.isNotEmpty ? commune : null,
+      estOuvert:      estOuvert,
     );
   }
 
   FreshSpot copyWithDistance(double distanceMetres) {
     return FreshSpot(
-      id:          id,
-      nom:         nom,
-      type:        type,
-      latitude:    latitude,
-      longitude:   longitude,
-      description: description,
-      adresse:     adresse,
-      estOuvert:   estOuvert,
-      distance:    distanceMetres,
-      horaires:    horaires,
+      id:             id,
+      nom:            nom,
+      type:           type,
+      latitude:       latitude,
+      longitude:      longitude,
+      description:    description,
+      adresse:        adresse,
+      arrondissement: arrondissement,
+      estOuvert:      estOuvert,
+      distance:       distanceMetres,
+      horaires:       horaires,
     );
   }
 
-  // Filtre les jours null ou vides ; retourne null si aucun jour renseigné
   static Map<String, String>? _parseHoraires(Map<String, dynamic> json) {
     final jours = {
       'Lundi':    json['horaires_lundi'],
@@ -176,6 +176,72 @@ class FreshSpot {
           .map((e) => MapEntry(e.key, e.value as String)),
     );
     return remplis.isEmpty ? null : remplis;
+  }
+
+  // Abréviations Paris → libellés complets
+  static const Map<String, String> _abreviations = {
+    'AV':  'Avenue',
+    'BD':  'Boulevard',
+    'BLD': 'Boulevard',
+    'R':   'Rue',
+    'PL':  'Place',
+    'SQ':  'Square',
+    'IMP': 'Impasse',
+    'ALL': 'Allée',
+    'RPT': 'Rond-Point',
+    'PAS': 'Passage',
+    'QU':  'Quai',
+    'CHE': 'Chemin',
+    'CRS': 'Cours',
+    'RTE': 'Route',
+    'VLA': 'Villa',
+  };
+
+  // Adresse lisible: title case, abréviations développées, code parasite retiré, arrondissement ajouté
+  String get adresseFormatee {
+    if (adresse.trim().isEmpty) return '';
+
+    // Retire le code interne Paris: chiffre(s) suivi d'une lettre isolée
+    // ex: "183 V BOULEVARD VINCENT AURIOL" → "183 BOULEVARD VINCENT AURIOL"
+    var base = adresse.trim().replaceAllMapped(
+      RegExp(r'^(\d+)\s+[A-Z]\s+', caseSensitive: false),
+      (m) => '${m[1]} ',
+    );
+
+    // Title case + développement des abréviations mot par mot
+    base = base.split(RegExp(r'\s+')).map((mot) {
+      if (mot.isEmpty) return mot;
+      final cle = mot.toUpperCase();
+      if (_abreviations.containsKey(cle)) return _abreviations[cle]!;
+      return mot[0].toUpperCase() + mot.substring(1).toLowerCase();
+    }).join(' ');
+
+    final arr = _arrondissementFormate;
+    return arr != null ? '$base, $arr' : base;
+  }
+
+  // "75013" → "Paris 13e" ; "PARIS 14EME ARRONDISSEMENT" → "Paris 14e"
+  String? get _arrondissementFormate {
+    if (arrondissement == null || arrondissement!.trim().isEmpty) return null;
+
+    // Format code postal: "75001"–"75020"
+    final matchCode = RegExp(r'^75(\d{3})$').firstMatch(arrondissement!.trim());
+    if (matchCode != null) {
+      final n = int.tryParse(matchCode.group(1)!) ?? 0;
+      if (n == 0) return null;
+      return 'Paris ${n == 1 ? "1er" : "${n}e"}';
+    }
+
+    // Format texte: "PARIS 14EME ARRONDISSEMENT" ou "PARIS 1ER ARRONDISSEMENT"
+    final matchTexte = RegExp(r'(\d+)\s*(?:EME|ER)', caseSensitive: false)
+        .firstMatch(arrondissement!);
+    if (matchTexte != null) {
+      final n = int.tryParse(matchTexte.group(1)!) ?? 0;
+      if (n == 0) return null;
+      return 'Paris ${n == 1 ? "1er" : "${n}e"}';
+    }
+
+    return null;
   }
 
   // "150 m" ou "1.5 km"
