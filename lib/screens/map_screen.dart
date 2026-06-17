@@ -265,13 +265,13 @@ class _BadgesContextuels extends StatelessWidget {
     switch (spot.type) {
       case FreshSpotType.parc:
         // Badge canicule en premier — info la plus cruciale pour l'app
-        if (spot.caniculeOuverture) {
+        if (spot.caniculeOuverture ?? false) {
           badges.add(_chip('Spécial canicule', Icons.wb_sunny, AppTheme.orangeFond, AppTheme.orangeDsfr));
         }
-        if (spot.ouvert24h) {
+        if (spot.ouvert24h ?? false) {
           badges.add(_chip('Ouvert la nuit', Icons.nightlight, AppTheme.fondDsfr, AppTheme.bleuRepublique));
         }
-        if (spot.ouvertureNocturneEte) {
+        if (spot.ouvertureNocturneEte ?? false) {
           badges.add(_chip('Nocturne été', Icons.bedtime_outlined, AppTheme.fondDsfr, AppTheme.bleuRepublique));
         }
         break;

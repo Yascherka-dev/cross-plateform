@@ -50,10 +50,10 @@ class FreshSpot {
   final double? distance;
   final Map<String, String>? horaires;
 
-  // Champs contextuels — espaces verts
-  final bool ouvert24h;
-  final bool caniculeOuverture;
-  final bool ouvertureNocturneEte;
+  // Champs contextuels — espaces verts (nullable: champs optionnels côté API)
+  final bool? ouvert24h;
+  final bool? caniculeOuverture;
+  final bool? ouvertureNocturneEte;
   final String? categorie;
 
   // Champs contextuels — équipements
@@ -74,9 +74,9 @@ class FreshSpot {
     this.arrondissement,
     this.distance,
     this.horaires,
-    this.ouvert24h = false,
-    this.caniculeOuverture = false,
-    this.ouvertureNocturneEte = false,
+    this.ouvert24h,
+    this.caniculeOuverture,
+    this.ouvertureNocturneEte,
     this.categorie,
     this.gratuit,
     this.motifIndispo,
