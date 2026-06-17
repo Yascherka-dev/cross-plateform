@@ -209,9 +209,15 @@ class _MapScreenState extends State<MapScreen> {
                           title: Text(spot.distanceLabel),
                         ),
 
-                      if (spot.horaires != null) ...[
+                      if (spot.horaires != null && spot.horaires!.isNotEmpty) ...[
                         const Divider(),
-                        _SectionHoraires(horaires: spot.horaires!),
+                        ...spot.horaires!.entries.map(
+                          (entry) => ListTile(
+                            leading: const Icon(Icons.schedule, color: AppTheme.griseTexteDsfr),
+                            title: Text(entry.key),
+                            trailing: Text(entry.value, style: const TextStyle(fontSize: 13)),
+                          ),
+                        ),
                       ],
 
                       const Divider(),
@@ -247,90 +253,6 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// Widget autonome pour l'affichage compact des horaires hebdomadaires.
-// Séparé de _MapScreenState pour garder build() lisible.
-class _SectionHoraires extends StatelessWidget {
-  final Map<String, String> horaires;
-
-  const _SectionHoraires({required this.horaires});
-
-  // Correspondance DateTime.weekday (1=lundi … 7=dimanche) → nom du jour
-  static const List<String> _jours = [
-    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final aujourdHui = _jours[DateTime.now().weekday - 1];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          // En-tête de section
-          Row(
-            children: const [
-              Icon(Icons.schedule, size: 16, color: AppTheme.griseTexteDsfr),
-              SizedBox(width: 6),
-              Text(
-                "Horaires d'ouverture",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.griseTexteDsfr,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Une ligne par jour, jour actuel mis en valeur
-          ..._jours.map((jour) {
-            final horaire  = horaires[jour];
-            final estAujourd = jour == aujourdHui;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 90,
-                    child: Text(
-                      jour,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400,
-                        color: estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      horaire ?? 'Non communiqué',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400,
-                        color: horaire != null
-                            ? (estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr)
-                            : AppTheme.griseTexteDsfr,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-
-          const SizedBox(height: 4),
-        ],
-      ),
     );
   }
 }
