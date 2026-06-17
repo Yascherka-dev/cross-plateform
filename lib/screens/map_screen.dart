@@ -209,10 +209,8 @@ class _MapScreenState extends State<MapScreen> {
                           title: Text(spot.distanceLabel),
                         ),
 
-                      if (spot.horaires != null) ...[
-                        const Divider(),
-                        _SectionHoraires(horaires: spot.horaires!),
-                      ],
+                      const Divider(),
+                      _SectionHoraires(type: spot.type, horaires: spot.horaires),
 
                       const Divider(),
 
@@ -252,8 +250,9 @@ class _MapScreenState extends State<MapScreen> {
 }
 
 class _SectionHoraires extends StatelessWidget {
-  final Map<String, String> horaires;
-  const _SectionHoraires({required this.horaires});
+  final FreshSpotType type;
+  final Map<String, String>? horaires;
+  const _SectionHoraires({required this.type, required this.horaires});
 
   static const List<String> _jours = [
     'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
@@ -261,7 +260,6 @@ class _SectionHoraires extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final aujourdHui = _jours[DateTime.now().weekday - 1];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
@@ -273,25 +271,35 @@ class _SectionHoraires extends StatelessWidget {
             Text("Horaires d'ouverture", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.griseTexteDsfr)),
           ]),
           const SizedBox(height: 8),
-          ..._jours.map((jour) {
-            final horaire = horaires[jour];
-            final estAujourd = jour == aujourdHui;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(children: [
-                SizedBox(
-                  width: 90,
-                  child: Text(jour, style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr)),
-                ),
-                Expanded(
-                  child: Text(horaire ?? 'Non communiqué', style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: horaire != null ? (estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr) : AppTheme.griseTexteDsfr)),
-                ),
-              ]),
-            );
-          }),
+          if (type == FreshSpotType.fontaine)
+            const Text('Accès libre', style: TextStyle(fontSize: 13, color: AppTheme.titreDsfr))
+          else if (horaires == null)
+            const Text('Horaires non communiqués', style: TextStyle(fontSize: 13, color: AppTheme.griseTexteDsfr, fontStyle: FontStyle.italic))
+          else
+            ..._buildGrille(horaires!),
           const SizedBox(height: 4),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildGrille(Map<String, String> h) {
+    final aujourdHui = _jours[DateTime.now().weekday - 1];
+    return _jours.map((jour) {
+      final horaire = h[jour];
+      final estAujourd = jour == aujourdHui;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(children: [
+          SizedBox(
+            width: 90,
+            child: Text(jour, style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr)),
+          ),
+          Expanded(
+            child: Text(horaire ?? 'Non communiqué', style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: horaire != null ? (estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr) : AppTheme.griseTexteDsfr)),
+          ),
+        ]),
+      );
+    }).toList();
   }
 }
