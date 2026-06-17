@@ -164,11 +164,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     leading: const Icon(Icons.health_and_safety_outlined, color: AppTheme.bleuRepublique),
                     title: const Text(
-                      'Conseils et premiers secours',
+                      'Conseils',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
                     subtitle: const Text(
-                      "Signes, gestes et numéros d'urgence",
+                      "Signes, gestes de prévention",
                       style: TextStyle(fontSize: 13),
                     ),
                     trailing: const Icon(
@@ -177,6 +177,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppTheme.griseTexteDsfr,
                     ),
                     onTap: () => setState(() => _currentIndex = 2),
+                  ),
+                   const Divider(height: 1),
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    leading: const Icon(Icons.emergency_outlined, color: AppTheme.bleuRepublique),
+                    title: const Text(
+                      'Urgence immédiate',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    ),
+                    subtitle: const Text(
+                      "Numéros d'urgence",
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: AppTheme.griseTexteDsfr,
+                    ),
+                    onTap: () => setState(() => _currentIndex = 3),
                   ),
                 ],
               ),

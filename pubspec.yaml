@@ -23,6 +23,7 @@ dependencies:
   supabase_flutter: ^2.14.2
   url_launcher: ^6.3.2
   flutter_dotenv: ^6.0.1
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
@@ -44,38 +45,3 @@ flutter:
     - .env
     - assets/images/
 
-  # Police Marianne — fonte officielle de la République française
-  # Famille complète avec tous les graisses et italiques
-  fonts:
-    - family: Marianne
-      fonts:
-        - asset: assets/fonts/Marianne-Thin.ttf
-          weight: 100
-        - asset: assets/fonts/Marianne-ThinItalic.ttf
-          weight: 100
-          style: italic
-        - asset: assets/fonts/Marianne-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Marianne-LightItalic.ttf
-          weight: 300
-          style: italic
-        - asset: assets/fonts/Marianne-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Marianne-RegularItalic.ttf
-          weight: 400
-          style: italic
-        - asset: assets/fonts/Marianne-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Marianne-MediumItalic.ttf
-          weight: 500
-          style: italic
-        - asset: assets/fonts/Marianne-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Marianne-BoldItalic.ttf
-          weight: 700
-          style: italic
-        - asset: assets/fonts/Marianne-ExtraBold.ttf
-          weight: 800
-        - asset: assets/fonts/Marianne-ExtraBoldItalic.ttf
-          weight: 800
-          style: italic

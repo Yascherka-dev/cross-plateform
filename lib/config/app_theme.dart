@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Neutres
-  static const Color fondDsfr       = Color(0xFFF0F4FF); // fond de page bleu pastel
-  static const Color bordureDsfr    = Color(0xFFE5E7EB); // séparateurs et bordures
-  static const Color titreDsfr      = Color(0xFF1A1A2E); // texte principal bleu nuit
-  static const Color griseTexteDsfr = Color(0xFF6B7280); // texte secondaire (unique gris)
-  static const Color bleuRepublique = Color(0xFF3B5BDB); // accent principal
+  static const Color fondDsfr       = Color(0xFFF0F4FF);
+  static const Color bordureDsfr    = Color(0xFFE5E7EB);
+  static const Color titreDsfr      = Color(0xFF1A1A2E);
+  static const Color griseTexteDsfr = Color(0xFF6B7280);
+  static const Color bleuRepublique = Color(0xFF3B5BDB);
 
   // Niveaux de risque — fond pastel + texte/bordure saturé
   static const Color vertFond   = Color(0xFFD3F9D8);
-  static const Color vertDsfr   = Color(0xFF2F9E44); // texte et bordure vert
+  static const Color vertDsfr   = Color(0xFF2F9E44);
   static const Color orangeFond = Color(0xFFFFE8CC);
-  static const Color orangeDsfr = Color(0xFFE67700); // texte et bordure orange
+  static const Color orangeDsfr = Color(0xFFE67700);
   static const Color rougeFond  = Color(0xFFFFE3E3);
-  static const Color rougeDsfr  = Color(0xFFC92A2A); // texte et bordure rouge
+  static const Color rougeDsfr  = Color(0xFFC92A2A);
 
   // Urgences
   static const Color urgenceFond = Color(0xFFEDF2FF);
@@ -30,16 +31,17 @@ class AppTheme {
       surface:   Colors.white,
     ),
 
-    fontFamily: 'Marianne',
+    // Inter via google_fonts (licence OFL) — remplace Marianne (réservée aux administrations d'État)
+    textTheme: GoogleFonts.interTextTheme(),
+
     scaffoldBackgroundColor: fondDsfr,
 
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: titreDsfr,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(
-        fontFamily: 'Marianne',
+      titleTextStyle: GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 18,
         color: titreDsfr,
@@ -79,7 +81,7 @@ class AppTheme {
       elevation: 0,
       indicatorColor: fondDsfr,
       labelTextStyle: WidgetStateProperty.all(
-        const TextStyle(fontFamily: 'Marianne', fontSize: 12),
+        GoogleFonts.inter(fontSize: 12),
       ),
     ),
 
