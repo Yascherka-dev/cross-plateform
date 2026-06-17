@@ -4,11 +4,9 @@ import '../logic/heat_risk_level.dart';
 import '../models/advice_card.dart';
 import '../services/supabase_service.dart';
 import '../widgets/advice_tile.dart';
-import '../widgets/emergency_tile.dart';
 
 class AdviceScreen extends StatefulWidget {
   final HeatRiskLevel? riskLevel;
-
   const AdviceScreen({super.key, required this.riskLevel});
 
   @override
@@ -17,60 +15,84 @@ class AdviceScreen extends StatefulWidget {
 
 class _AdviceScreenState extends State<AdviceScreen> {
   final _service = SupabaseService();
-
-  late final Future<List<dynamic>> _dataFuture;
+  late final Future<List<AdviceCard>> _future;
 
   @override
   void initState() {
     super.initState();
-    _dataFuture = Future.wait([
-      _service.fetchAdviceCards(),
-      _service.fetchEmergencyNumbers(),
-    ]);
+    _future = _service.fetchAdviceCards();
   }
 
-  String _getLevelLabel(HeatRiskLevel level) {
-    switch (level) {
-      case HeatRiskLevel.vert:   return 'Risque faible';
-      case HeatRiskLevel.orange: return 'Vigilance orange';
-      case HeatRiskLevel.rouge:  return 'Alerte rouge';
+  // En-tête de section coloré selon le niveau ; mis en avant si c'est le niveau actuel
+  Widget _enteteSection(String label, HeatRiskLevel niveau) {
+    final estActif = niveau == widget.riskLevel;
+    final Color fond;
+    final Color texte;
+    switch (niveau) {
+      case HeatRiskLevel.vert:
+        fond = AppTheme.vertFond; texte = AppTheme.vertDsfr;
+      case HeatRiskLevel.orange:
+        fond = AppTheme.orangeFond; texte = AppTheme.orangeDsfr;
+      case HeatRiskLevel.rouge:
+        fond = AppTheme.rougeFond; texte = AppTheme.rougeDsfr;
     }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: estActif ? fond : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: estActif ? texte : AppTheme.griseTexteDsfr,
+            ),
+          ),
+          if (estActif) ...[
+            const SizedBox(width: 8),
+            Chip(
+              label: const Text('Niveau actuel'),
+              labelStyle: TextStyle(color: texte, fontSize: 11),
+              backgroundColor: fond,
+              side: BorderSide.none,
+              padding: EdgeInsets.zero,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.riskLevel == null) {
-      return const Center(child: Text('Niveau de risque non disponible'));
-    }
-
-    return FutureBuilder<List<dynamic>>(
-      future: _dataFuture,
+    return FutureBuilder<List<AdviceCard>>(
+      future: _future,
       builder: (context, snapshot) {
-
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(color: AppTheme.bleuRepublique),
           );
         }
 
-        final List<AdviceCard> cards = snapshot.hasData
-            ? snapshot.data![0] as List<AdviceCard>
-            : allAdviceCards;
-        final List<Map<String, dynamic>> numbers = snapshot.hasData
-            ? snapshot.data![1] as List<Map<String, dynamic>>
-            : SupabaseService.emergencyFallback;
-
-        final filtered = cards
-            .where((c) => c.niveau.index <= widget.riskLevel!.index)
-            .toList();
+        final cards  = snapshot.hasData ? snapshot.data! : allAdviceCards;
+        final vert   = cards.where((c) => c.niveau == HeatRiskLevel.vert).toList();
+        final orange = cards.where((c) => c.niveau == HeatRiskLevel.orange).toList();
+        final rouge  = cards.where((c) => c.niveau == HeatRiskLevel.rouge).toList();
 
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
 
-            Text(
-              'Conseils — ${_getLevelLabel(widget.riskLevel!)}',
-              style: const TextStyle(
+            const Text(
+              'Conseils de prévention',
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.titreDsfr,
@@ -79,31 +101,23 @@ class _AdviceScreenState extends State<AdviceScreen> {
 
             const SizedBox(height: 16),
 
-            ...filtered.map((card) => AdviceTile(card: card)),
-
-            if (numbers.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              const Text(
-                "Numéros d'urgence",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.titreDsfr,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                color: AppTheme.urgenceFond,
-                child: Column(
-                  children: [
-                    for (int i = 0; i < numbers.length; i++) ...[
-                      if (i > 0) const Divider(height: 1),
-                      EmergencyTile(data: numbers[i]),
-                    ],
-                  ],
-                ),
-              ),
+            if (vert.isNotEmpty) ...[
+              _enteteSection('Toujours utile', HeatRiskLevel.vert),
+              ...vert.map((card) => AdviceTile(card: card)),
+              const SizedBox(height: 16),
             ],
+
+            if (orange.isNotEmpty) ...[
+              _enteteSection('Si vigilance orange', HeatRiskLevel.orange),
+              ...orange.map((card) => AdviceTile(card: card)),
+              const SizedBox(height: 16),
+            ],
+
+            if (rouge.isNotEmpty) ...[
+              _enteteSection('Si alerte rouge', HeatRiskLevel.rouge),
+              ...rouge.map((card) => AdviceTile(card: card)),
+            ],
+
           ],
         );
       },
