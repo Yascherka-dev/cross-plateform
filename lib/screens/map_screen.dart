@@ -35,19 +35,6 @@ class _MapScreenState extends State<MapScreen> {
     return LatLng(lat, lon);
   }
 
-  Color _couleurType(FreshSpotType type) {
-    final hex = type.colorHex.replaceFirst('#', '');
-    return Color(int.parse('FF$hex', radix: 16));
-  }
-
-  IconData _iconeType(FreshSpotType type) {
-    switch (type) {
-      case FreshSpotType.fontaine:   return Icons.water_drop;
-      case FreshSpotType.parc:       return Icons.park;
-      case FreshSpotType.equipement: return Icons.ac_unit;
-    }
-  }
-
   void _recentrer() {
     _mapController.move(_centroide(_spotsFiltres), 14);
   }
@@ -94,9 +81,9 @@ class _MapScreenState extends State<MapScreen> {
                   child: GestureDetector(
                     onTap: () => setState(() => _spotSelectionne = spot),
                     child: CircleAvatar(
-                      backgroundColor: _couleurType(spot.type),
+                      backgroundColor: spot.type.color,
                       radius: 18,
-                      child: Icon(_iconeType(spot.type), color: Colors.white, size: 18),
+                      child: Icon(spot.type.icon, color: Colors.white, size: 18),
                     ),
                   ),
                 ),
@@ -131,7 +118,7 @@ class _MapScreenState extends State<MapScreen> {
                       label: Text(type.label),
                       selected: _filtreActif == type,
                       showCheckmark: false,
-                      avatar: Icon(_iconeType(type), size: 16, color: _couleurType(type)),
+                      avatar: Icon(type.icon, size: 16, color: type.color),
                       onSelected: (selected) => setState(() {
                         _filtreActif = selected ? type : null;
                         _recentrer();
@@ -157,8 +144,7 @@ class _MapScreenState extends State<MapScreen> {
               maxChildSize: 1.0,
               expand: true,
               builder: (context, scrollController) {
-                final spot    = _spotSelectionne!;
-                final couleur = _couleurType(spot.type);
+                final spot = _spotSelectionne!;
 
                 return Card(
                   margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -181,8 +167,8 @@ class _MapScreenState extends State<MapScreen> {
 
                       ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: couleur,
-                          child: Icon(_iconeType(spot.type), color: Colors.white, size: 18),
+                          backgroundColor: spot.type.color,
+                          child: Icon(spot.type.icon, color: Colors.white, size: 18),
                         ),
                         title: Text(
                           spot.nom,

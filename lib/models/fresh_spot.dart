@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum FreshSpotType {
   fontaine,
   parc,
@@ -13,12 +15,24 @@ extension FreshSpotTypeExtension on FreshSpotType {
     }
   }
 
-  // Palette DSFR
   String get colorHex {
     switch (this) {
       case FreshSpotType.fontaine:   return '#0063CB';
       case FreshSpotType.parc:       return '#18753C';
       case FreshSpotType.equipement: return '#009099';
+    }
+  }
+
+  Color get color {
+    final hex = colorHex.replaceFirst('#', '');
+    return Color(int.parse('FF$hex', radix: 16));
+  }
+
+  IconData get icon {
+    switch (this) {
+      case FreshSpotType.fontaine:   return Icons.water_drop;
+      case FreshSpotType.parc:       return Icons.park;
+      case FreshSpotType.equipement: return Icons.ac_unit;
     }
   }
 }
