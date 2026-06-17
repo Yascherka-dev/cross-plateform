@@ -1,22 +1,24 @@
-// Enumération des 3 niveaux de risque canicule de l'app
-// Ces valeurs sont utilisées partout dans l'app pour adapter
-// l'interface, les fiches conseils et les filtres de carte
 enum HeatRiskLevel { vert, orange, rouge }
 
-// Fonction principale de logique métier de l'app
-// Elle calcule le niveau de risque à partir des données météo
-// C'est ici qu'on code nos propres règles, sans dépendre d'une API
+// Calcule le niveau de risque à partir des conditions météo ACTUELLES uniquement.
 //
-// Les seuils sont optionnels: si Supabase (table heat_thresholds) les fournit,
-// ils remplacent les valeurs par défaut — sinon les constantes ci-dessous s'appliquent
+// Ancien comportement : peakTemp et peakUv entraient dans la décision,
+// ce qui causait "Alerte rouge" à 26°C parce que le pic prévu plus tard
+// dans la journée franchissait le seuil — incohérent avec ce que l'utilisateur vit.
+//
+// Nouveau comportement : seuls temp, feelsLike, humidity et uvNow décident du niveau.
+// peakTemp et peakUv restent des paramètres requis pour l'affichage informatif
+// dans home_screen.dart ("Pic aujourd'hui : X°C") mais n'influencent plus le calcul.
+//
+// Les seuils viennent de Supabase (table heat_thresholds) ; les valeurs named params
+// en sont les valeurs injectées — pas de hardcoding ici.
 HeatRiskLevel calculateHeatRisk({
-  required double temp,       // température réelle en °C (temperature_2m)
-  required double feelsLike,  // température ressentie (apparent_temperature)
-  required int humidity,      // humidité relative en % (relative_humidity_2m)
-  required double uvNow,      // indice UV actuel (uv_index current)
-  required double peakTemp,   // pic de température sur 24h (max hourly)
-  required double peakUv,     // pic UV sur 24h (max hourly)
-  // Seuils configurables via Supabase — valeurs par défaut = constantes métier initiales
+  required double temp,       // température réelle en °C
+  required double feelsLike,  // température ressentie
+  required int    humidity,   // humidité relative en %
+  required double uvNow,      // indice UV actuel
+  required double peakTemp,   // pic journalier — affichage uniquement
+  required double peakUv,     // pic UV journalier — affichage uniquement
   required double seuilTempOrange,
   required double seuilTempRouge,
   required double seuilUvOrange,
@@ -24,35 +26,25 @@ HeatRiskLevel calculateHeatRisk({
   required int    humiditeBoost1,
   required int    humiditeBoost2,
 }) {
-
-  // On prend le pire entre température réelle et ressentie
-  // Ex: 32° réel mais 35° ressenti → on utilise 35° pour le calcul
+  // Pire entre température réelle et ressentie
   final double refTemp = feelsLike > temp ? feelsLike : temp;
 
-  // Modificateur humidité: au-dessus des seuils, la transpiration
-  // refroidit moins bien le corps, ce qui amplifie la dangerosité
+  // Humidité élevée réduit l'efficacité de la transpiration → +1 ou +2°C effectifs
   final double humidityBoost = humidity > humiditeBoost2 ? 2.0
                              : humidity > humiditeBoost1 ? 1.0
                              : 0.0;
 
-  // Température effective = ressenti + impact de l'humidité
   final double effectiveTemp = refTemp + humidityBoost;
 
-  // Pour l'UV on compare le niveau actuel avec 50% du pic journalier
-  // Si on est en matinée, le pic de 14h compte déjà comme risque futur
-  final double refUv = peakUv > 9.0 ? peakUv : uvNow;
-
-  // ROUGE : danger élevé — un seul critère suffit à déclencher l'alerte
-  if (effectiveTemp > seuilTempRouge || peakTemp > seuilTempRouge || refUv > seuilUvRouge) {
+  // ROUGE : danger immédiat
+  if (effectiveTemp > seuilTempRouge || uvNow > seuilUvRouge) {
     return HeatRiskLevel.rouge;
   }
 
   // ORANGE : vigilance
-  // Exemple concret: 23° mais UV à 7 → ORANGE (comme Paris ce matin)
-  if (effectiveTemp >= seuilTempOrange || peakTemp >= seuilTempOrange || refUv >= seuilUvOrange) {
+  if (effectiveTemp >= seuilTempOrange || uvNow >= seuilUvOrange) {
     return HeatRiskLevel.orange;
   }
 
-  // VERT : pas de risque particulier, tous les seuils sont sous les limites
   return HeatRiskLevel.vert;
 }
