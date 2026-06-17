@@ -6,8 +6,9 @@ import '../config/app_theme.dart';
 // Conçu pour être utilisé dans une Column avec Divider entre items
 class EmergencyTile extends StatelessWidget {
   final Map<String, dynamic> data;
+  final VoidCallback? onTap; // si fourni, remplace l'appel direct
 
-  const EmergencyTile({super.key, required this.data});
+  const EmergencyTile({super.key, required this.data, this.onTap});
 
   Future<void> _appeler(String numero) async {
     final uri = Uri(scheme: 'tel', path: numero);
@@ -56,7 +57,7 @@ class EmergencyTile extends StatelessWidget {
         ),
       ),
       trailing: const Icon(Icons.phone_outlined, color: AppTheme.bleuRepublique, size: 20),
-      onTap: () => _appeler(numero),
+      onTap: onTap ?? () => _appeler(numero),
     );
   }
 }

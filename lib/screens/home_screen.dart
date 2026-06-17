@@ -11,6 +11,7 @@ import '../widgets/risk_banner.dart';
 import '../widgets/fresh_spot_tile.dart';
 import 'map_screen.dart';
 import 'advice_screen.dart';
+import 'emergency_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -97,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return MapScreen(freshSpots: freshSpots);
       case 2:
         return AdviceScreen(riskLevel: riskLevel);
+      case 3:
+        return const EmergencyScreen();
       default:
         return _buildHomeContent(weather, riskLevel, freshSpots);
     }
@@ -305,6 +308,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.health_and_safety_outlined),
             selectedIcon: Icon(Icons.health_and_safety),
             label: 'Conseils',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.emergency_outlined),
+            selectedIcon: Icon(Icons.emergency),
+            label: 'Urgences',
           ),
         ],
       ),
