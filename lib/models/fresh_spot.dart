@@ -1,16 +1,10 @@
-// Enumération des types de points de fraîcheur disponibles dans l'app
-// Correspond aux 3 datasets OpenData Paris qu'on interroge
 enum FreshSpotType {
-  fontaine,    // Dataset fontaines-a-boire (1327 points)
-  parc,        // Dataset ilots-de-fraicheur-espaces-verts-frais (986 points)
-  equipement,  // Dataset ilots-de-fraicheur-equipements-activites (548 points)
+  fontaine,
+  parc,
+  equipement,
 }
 
-// Extension sur FreshSpotType pour les méthodes utilitaires
-// directement sur l'enum → évite des switch/case partout dans le code
 extension FreshSpotTypeExtension on FreshSpotType {
-
-  // Label affiché dans l'UI (badge, filtre, carte)
   String get label {
     switch (this) {
       case FreshSpotType.fontaine:   return 'Fontaine';
@@ -19,28 +13,27 @@ extension FreshSpotTypeExtension on FreshSpotType {
     }
   }
 
-  // Couleur hexadécimale du marqueur sur la carte — palette DSFR
+  // Palette DSFR
   String get colorHex {
     switch (this) {
-      case FreshSpotType.fontaine:   return '#0063CB'; // bleu DSFR
-      case FreshSpotType.parc:       return '#18753C'; // vert DSFR
-      case FreshSpotType.equipement: return '#009099'; // teal DSFR
+      case FreshSpotType.fontaine:   return '#0063CB';
+      case FreshSpotType.parc:       return '#18753C';
+      case FreshSpotType.equipement: return '#009099';
     }
   }
 }
 
-// Modèle représentant un point de fraîcheur sur la carte
 class FreshSpot {
-  final String id;             // identifiant unique
-  final String nom;            // nom du lieu
-  final FreshSpotType type;    // type de point
-  final double latitude;       // coordonnée GPS
-  final double longitude;      // coordonnée GPS
-  final String description;    // description / catégorie
-  final String adresse;        // adresse complète
-  final bool estOuvert;        // statut d'ouverture
-  final double? distance;      // distance en mètres depuis l'utilisateur
-                               // nullable car calculée après la récupération API
+  final String id;
+  final String nom;
+  final FreshSpotType type;
+  final double latitude;
+  final double longitude;
+  final String description;
+  final String adresse;
+  final bool estOuvert;
+  final double? distance;              // calculée après récupération API
+  final Map<String, String>? horaires; // null pour fontaines ou si tous les jours vides
 
   FreshSpot({
     required this.id,
@@ -52,28 +45,21 @@ class FreshSpot {
     required this.adresse,
     required this.estOuvert,
     this.distance,
+    this.horaires,
   });
 
-  // -------------------------------------------------------
-  // FACTORY 1: Espaces verts frais
-  // Dataset: ilots-de-fraicheur-espaces-verts-frais
-  // Champs confirmés par l'API réelle
-  // -------------------------------------------------------
+  // ── Dataset: ilots-de-fraicheur-espaces-verts-frais ─────────────────────
   factory FreshSpot.fromJsonEspaceVert(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // Logique d'ouverture: on combine 3 champs disponibles dans ce dataset
-    // ouvert_24h = "Oui" → toujours ouvert
-    // canicule_ouverture = "Oui" → ouvert spécialement pendant canicule
-    // statut_ouverture peut être null → on le traite comme ouvert par défaut
-    final bool ouvert24h       = json['ouvert_24h'] == 'Oui';
-    final bool ouvertCanicule  = json['canicule_ouverture'] == 'Oui';
-    final String statut        = json['statut_ouverture'] ?? 'Ouvert';
-    final bool estOuvert       = ouvert24h || ouvertCanicule ||
+    // Ouverture: 3 champs combinés — ouvert_24h, canicule_ouverture, statut_ouverture
+    final bool ouvert24h      = json['ouvert_24h'] == 'Oui';
+    final bool ouvertCanicule = json['canicule_ouverture'] == 'Oui';
+    final String statut       = json['statut_ouverture'] ?? 'Ouvert';
+    final bool estOuvert      = ouvert24h || ouvertCanicule ||
         statut.toLowerCase().contains('ouvert');
 
-    // proportion_vegetation_haute indique le % d'ombrage
-    // On l'utilise dans la description pour informer l'utilisateur
+    // proportion_vegetation_haute → % d'ombrage
     final double ombrage = (json['proportion_vegetation_haute'] ?? 0).toDouble();
     final String ombrageLabel = ombrage > 50
         ? 'Très ombragé'
@@ -83,71 +69,58 @@ class FreshSpot {
 
     return FreshSpot(
       id:          json['identifiant']?.toString() ?? 'ev_unknown',
-      nom:         json['nom'] ?? 'Espace vert',            // champ réel = "nom"
+      nom:         json['nom'] ?? 'Espace vert',
       type:        FreshSpotType.parc,
       latitude:    (geo['lat'] ?? 0.0).toDouble(),
       longitude:   (geo['lon'] ?? 0.0).toDouble(),
       description: '$ombrageLabel • ${json['categorie'] ?? json['type'] ?? ''}',
       adresse:     json['adresse'] ?? '',
       estOuvert:   estOuvert,
+      horaires:    _parseHoraires(json),
     );
   }
 
-  // -------------------------------------------------------
-  // FACTORY 2: Équipements frais
-  // Dataset: ilots-de-fraicheur-equipements-activites
-  // Champs confirmés par l'API réelle
-  // -------------------------------------------------------
+  // ── Dataset: ilots-de-fraicheur-equipements-activites ───────────────────
   factory FreshSpot.fromJsonEquipement(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // statut_ouverture peut être null dans ce dataset
-    // On considère ouvert par défaut si pas d'info
+    // statut_ouverture souvent null → ouvert par défaut
     final String statut  = json['statut_ouverture'] ?? '';
     final bool estOuvert = statut.isEmpty ||
         statut.toLowerCase().contains('ouvert');
 
-    // payant = "Oui"/"Non" → on l'affiche dans la description
     final String payant = json['payant'] == 'Non' ? 'Gratuit' : 'Payant';
 
     return FreshSpot(
       id:          json['identifiant']?.toString() ?? 'eq_unknown',
-      nom:         json['nom'] ?? 'Équipement frais',    // champ réel = "nom"
+      nom:         json['nom'] ?? 'Équipement frais',
       type:        FreshSpotType.equipement,
       latitude:    (geo['lat'] ?? 0.0).toDouble(),
       longitude:   (geo['lon'] ?? 0.0).toDouble(),
       description: '${json['type'] ?? 'Équipement'} • $payant',
       adresse:     json['adresse'] ?? '',
       estOuvert:   estOuvert,
+      horaires:    _parseHoraires(json), // souvent null en pratique
     );
   }
 
-  // -------------------------------------------------------
-  // FACTORY 3: Fontaines à boire
-  // Dataset: fontaines-a-boire
-  // Champs confirmés par l'API réelle
-  // -------------------------------------------------------
+  // ── Dataset: fontaines-a-boire ──────────────────────────────────────────
   factory FreshSpot.fromJsonFontaine(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
 
-    // dispo = "OUI"/"NON" → champ réel pour le statut des fontaines
-    // motif_ind = raison de l'indisponibilité (ex: "APP A REPARER")
+    // dispo = "OUI"/"NON" ; motif_ind = raison de l'indisponibilité
     final bool estOuvert   = json['dispo'] == 'OUI';
     final String motif     = json['motif_ind'] ?? '';
-    final String descMotif = !estOuvert && motif.isNotEmpty
-        ? ' • $motif'
-        : '';
+    final String descMotif = !estOuvert && motif.isNotEmpty ? ' • $motif' : '';
 
-    // voie = nom de la rue (pas de champ "nom" dans ce dataset)
-    // type_objet = "BORNE_FONTAINE", "FONTAINE_WALLACE"...
-    // modele = modèle de la fontaine (ex: "GHM Ville de Paris")
+    // voie + commune remplacent un champ "adresse" absent de ce dataset
     final String typeObjet = json['type_objet'] ?? 'Fontaine';
     final String voie      = json['voie'] ?? '';
     final String commune   = json['commune'] ?? '';
 
     return FreshSpot(
-      id:          json['gid']?.toString() ?? 'f_unknown', // champ réel = "gid"
-      nom:         typeObjet,                               // pas de nom propre
+      id:          json['gid']?.toString() ?? 'f_unknown',
+      nom:         typeObjet,
       type:        FreshSpotType.fontaine,
       latitude:    (geo['lat'] ?? 0.0).toDouble(),
       longitude:   (geo['lon'] ?? 0.0).toDouble(),
@@ -157,7 +130,6 @@ class FreshSpot {
     );
   }
 
-  // Crée une copie avec la distance calculée (immutabilité)
   FreshSpot copyWithDistance(double distanceMetres) {
     return FreshSpot(
       id:          id,
@@ -169,10 +141,30 @@ class FreshSpot {
       adresse:     adresse,
       estOuvert:   estOuvert,
       distance:    distanceMetres,
+      horaires:    horaires,
     );
   }
 
-  // Distance formatée pour l'UI: 150 → "150 m" / 1500 → "1.5 km"
+  // Filtre les jours null ou vides ; retourne null si aucun jour renseigné
+  static Map<String, String>? _parseHoraires(Map<String, dynamic> json) {
+    final jours = {
+      'Lundi':    json['horaires_lundi'],
+      'Mardi':    json['horaires_mardi'],
+      'Mercredi': json['horaires_mercredi'],
+      'Jeudi':    json['horaires_jeudi'],
+      'Vendredi': json['horaires_vendredi'],
+      'Samedi':   json['horaires_samedi'],
+      'Dimanche': json['horaires_dimanche'],
+    };
+    final remplis = Map<String, String>.fromEntries(
+      jours.entries
+          .where((e) => e.value != null && (e.value as String).trim().isNotEmpty)
+          .map((e) => MapEntry(e.key, e.value as String)),
+    );
+    return remplis.isEmpty ? null : remplis;
+  }
+
+  // "150 m" ou "1.5 km"
   String get distanceLabel {
     if (distance == null) return '';
     if (distance! < 1000) return '${distance!.toInt()} m';
