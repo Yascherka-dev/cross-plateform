@@ -8,7 +8,14 @@ import '../models/fresh_spot.dart';
 // Spots reçus depuis HomeScreen — pas de nouvel appel API
 class MapScreen extends StatefulWidget {
   final List<FreshSpot> freshSpots;
-  const MapScreen({super.key, required this.freshSpots});
+  final List<String> sourcesEnEchec; // sources OpenData KO → bannière info
+  final VoidCallback? onRetry;        // relance le chargement depuis HomeScreen
+  const MapScreen({
+    super.key,
+    required this.freshSpots,
+    this.sourcesEnEchec = const [],
+    this.onRetry,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -92,18 +99,30 @@ class _MapScreenState extends State<MapScreen> {
           ],
         ),
 
-        // ── 2. FILTRES ────────────────────────────────────────────
+        // ── 2. BANNIÈRE INFO + FILTRES ────────────────────────────
         Positioned(
           top: 12,
           left: 12,
           right: 12,
           child: SafeArea(
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Wrap(
-                  spacing: 8,
-                  children: [
+            child: Column(
+              children: [
+
+                // Données partielles : message non bloquant
+                if (widget.sourcesEnEchec.isNotEmpty) ...[
+                  _BanniereDonnees(
+                    sources: widget.sourcesEnEchec,
+                    onRetry: widget.onRetry,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
                     FilterChip(
                       label: const Text('Tous'),
                       selected: _filtreActif == null,
@@ -124,9 +143,11 @@ class _MapScreenState extends State<MapScreen> {
                         _recentrer();
                       }),
                     )),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -250,6 +271,47 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// Bannière discrète : prévient que des données sont indisponibles
+class _BanniereDonnees extends StatelessWidget {
+  final List<String> sources;
+  final VoidCallback? onRetry;
+  const _BanniereDonnees({required this.sources, this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppTheme.urgenceFond,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: AppTheme.bleuRepublique),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Certaines données sont momentanément indisponibles '
+                '(${sources.join(', ')}). La carte peut être incomplète.',
+                style: const TextStyle(fontSize: 12, color: AppTheme.titreDsfr),
+              ),
+            ),
+            if (onRetry != null)
+              TextButton(
+                onPressed: onRetry,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.bleuRepublique,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Réessayer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

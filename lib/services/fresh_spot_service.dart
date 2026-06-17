@@ -5,6 +5,13 @@ import '../config/app_config.dart';
 import 'location_service.dart';
 import 'package:flutter/foundation.dart';
 
+// Résultat agrégé : spots disponibles + sources OpenData qui n'ont pas répondu
+class FreshSpotResult {
+  final List<FreshSpot> spots;
+  final List<String> sourcesEnEchec; // ex: ["Fontaines"]
+  FreshSpotResult({required this.spots, required this.sourcesEnEchec});
+}
+
 class FreshSpotService {
   final LocationService _locationService = LocationService();
 
@@ -12,15 +19,18 @@ class FreshSpotService {
   List<FreshSpot>? _cachedSpots;
   DateTime? _lastFetch;
 
-  Future<List<FreshSpot>> fetchAllFreshSpots({
+  Future<FreshSpotResult> fetchAllFreshSpots({
     required double userLat,
     required double userLon,
   }) async {
     if (_cachedSpots != null && _lastFetch != null) {
       final age = DateTime.now().difference(_lastFetch!);
       if (age < AppConfig.freshSpotCacheDuration) {
-        // Distance recalculée même depuis le cache (position peut avoir changé)
-        return _addDistances(_cachedSpots!, userLat, userLon);
+        // Cache alimenté uniquement quand tout a répondu → aucune source en échec
+        return FreshSpotResult(
+          spots: _addDistances(_cachedSpots!, userLat, userLon),
+          sourcesEnEchec: const [],
+        );
       }
     }
 
@@ -31,18 +41,32 @@ class FreshSpotService {
     ]);
 
     final List<FreshSpot> allSpots = [
-      ...results[0],
-      ...results[1],
-      ...results[2],
+      ...results[0].$1,
+      ...results[1].$1,
+      ...results[2].$1,
     ];
 
-    _cachedSpots = allSpots;
-    _lastFetch = DateTime.now();
+    // Chaque _fetch renvoie (spots, succès) → on liste les sources KO
+    final echecs = <String>[
+      if (!results[0].$2) 'Espaces verts',
+      if (!results[1].$2) 'Équipements',
+      if (!results[2].$2) 'Fontaines',
+    ];
 
-    return _addDistances(allSpots, userLat, userLon);
+    // On ne met en cache que les données complètes, pour qu'un "Réessayer"
+    // relance vraiment les sources tombées au lieu de servir du partiel
+    if (echecs.isEmpty) {
+      _cachedSpots = allSpots;
+      _lastFetch = DateTime.now();
+    }
+
+    return FreshSpotResult(
+      spots: _addDistances(allSpots, userLat, userLon),
+      sourcesEnEchec: echecs,
+    );
   }
 
-  Future<List<FreshSpot>> _fetchEspacesVerts() async {
+  Future<(List<FreshSpot>, bool)> _fetchEspacesVerts() async {
     try {
       final url = Uri.parse(
         '${AppConfig.espacesVertsFraisDataset}'
@@ -57,16 +81,16 @@ class FreshSpotService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List records = json['results'] ?? [];
-        return records.map((r) => FreshSpot.fromJsonEspaceVert(r)).toList();
+        return (records.map((r) => FreshSpot.fromJsonEspaceVert(r)).toList(), true);
       }
-      return [];
+      return (<FreshSpot>[], false);
     } catch (e) {
       debugPrint('Erreur espaces verts: $e');
-      return [];
+      return (<FreshSpot>[], false);
     }
   }
 
-  Future<List<FreshSpot>> _fetchEquipements() async {
+  Future<(List<FreshSpot>, bool)> _fetchEquipements() async {
     try {
       final url = Uri.parse(
         '${AppConfig.equipementsFraisDataset}'
@@ -79,16 +103,16 @@ class FreshSpotService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List records = json['results'] ?? [];
-        return records.map((r) => FreshSpot.fromJsonEquipement(r)).toList();
+        return (records.map((r) => FreshSpot.fromJsonEquipement(r)).toList(), true);
       }
-      return [];
+      return (<FreshSpot>[], false);
     } catch (e) {
       debugPrint('Erreur équipements: $e');
-      return [];
+      return (<FreshSpot>[], false);
     }
   }
 
-  Future<List<FreshSpot>> _fetchFontaines() async {
+  Future<(List<FreshSpot>, bool)> _fetchFontaines() async {
     try {
       final url = Uri.parse(
         '${AppConfig.fontainesDataset}'
@@ -99,12 +123,12 @@ class FreshSpotService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List records = json['results'] ?? [];
-        return records.map((r) => FreshSpot.fromJsonFontaine(r)).toList();
+        return (records.map((r) => FreshSpot.fromJsonFontaine(r)).toList(), true);
       }
-      return [];
+      return (<FreshSpot>[], false);
     } catch (e) {
       debugPrint('Erreur fontaines: $e');
-      return [];
+      return (<FreshSpot>[], false);
     }
   }
 

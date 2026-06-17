@@ -54,8 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _supabaseService.fetchHeatThresholds(),
     ]);
 
-    final freshSpots = parallelResults[0] as List<FreshSpot>;
-    final thresholds = parallelResults[1] as Map<String, Map<String, dynamic>>;
+    final spotsResult = parallelResults[0] as FreshSpotResult;
+    final thresholds  = parallelResults[1] as Map<String, Map<String, dynamic>>;
 
     final orange = thresholds['orange'];
     final rouge  = thresholds['rouge'];
@@ -76,9 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     return {
-      'weather':    weather,
-      'riskLevel':  riskLevel,
-      'freshSpots': freshSpots,
+      'weather':         weather,
+      'riskLevel':       riskLevel,
+      'freshSpots':      spotsResult.spots,
+      'sourcesEnEchec':  spotsResult.sourcesEnEchec,
     };
   }
 
@@ -92,10 +93,15 @@ class _HomeScreenState extends State<HomeScreen> {
     WeatherData weather,
     HeatRiskLevel riskLevel,
     List<FreshSpot> freshSpots,
+    List<String> sourcesEnEchec,
   ) {
     switch (_currentIndex) {
       case 1:
-        return MapScreen(freshSpots: freshSpots);
+        return MapScreen(
+          freshSpots: freshSpots,
+          sourcesEnEchec: sourcesEnEchec,
+          onRetry: _refresh,
+        );
       case 2:
         return AdviceScreen(riskLevel: riskLevel);
       case 3:
@@ -301,11 +307,12 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          final data       = snapshot.data!;
-          final weather    = data['weather']    as WeatherData;
-          final riskLevel  = data['riskLevel']  as HeatRiskLevel;
-          final freshSpots = data['freshSpots'] as List<FreshSpot>;
-          return _buildScreen(weather, riskLevel, freshSpots);
+          final data           = snapshot.data!;
+          final weather        = data['weather']        as WeatherData;
+          final riskLevel      = data['riskLevel']      as HeatRiskLevel;
+          final freshSpots     = data['freshSpots']     as List<FreshSpot>;
+          final sourcesEnEchec = data['sourcesEnEchec'] as List<String>;
+          return _buildScreen(weather, riskLevel, freshSpots, sourcesEnEchec);
         },
       ),
 
