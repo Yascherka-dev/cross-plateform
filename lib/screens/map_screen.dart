@@ -174,7 +174,7 @@ class _MapScreenState extends State<MapScreen> {
                           spot.nom,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: Text(spot.type.label),
+                        subtitle: Text(spot.categorie ?? spot.type.label),
                         trailing: Chip(
                           label: Text(spot.estOuvert ? 'Ouvert' : 'Fermé'),
                           backgroundColor: spot.estOuvert ? AppTheme.vertFond : AppTheme.rougeFond,
@@ -191,6 +191,8 @@ class _MapScreenState extends State<MapScreen> {
 
                       const Divider(),
 
+                      _BadgesContextuels(spot: spot),
+
                       if (spot.adresseFormatee.isNotEmpty)
                         ListTile(
                           leading: const Icon(Icons.location_on_outlined, color: AppTheme.griseTexteDsfr),
@@ -199,7 +201,10 @@ class _MapScreenState extends State<MapScreen> {
 
                       if (spot.description.trim().isNotEmpty)
                         ListTile(
-                          leading: const Icon(Icons.info_outline, color: AppTheme.griseTexteDsfr),
+                          leading: Icon(
+                            spot.type == FreshSpotType.parc ? Icons.forest : Icons.info_outline,
+                            color: AppTheme.griseTexteDsfr,
+                          ),
                           title: Text(spot.description),
                         ),
 
@@ -245,6 +250,63 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BadgesContextuels extends StatelessWidget {
+  final FreshSpot spot;
+  const _BadgesContextuels({required this.spot});
+
+  @override
+  Widget build(BuildContext context) {
+    final badges = <Widget>[];
+
+    switch (spot.type) {
+      case FreshSpotType.parc:
+        // Badge canicule en premier — info la plus cruciale pour l'app
+        if (spot.caniculeOuverture) {
+          badges.add(_chip('Spécial canicule', Icons.wb_sunny, AppTheme.orangeFond, AppTheme.orangeDsfr));
+        }
+        if (spot.ouvert24h) {
+          badges.add(_chip('Ouvert la nuit', Icons.nightlight, AppTheme.fondDsfr, AppTheme.bleuRepublique));
+        }
+        if (spot.ouvertureNocturneEte) {
+          badges.add(_chip('Nocturne été', Icons.bedtime_outlined, AppTheme.fondDsfr, AppTheme.bleuRepublique));
+        }
+        break;
+
+      case FreshSpotType.equipement:
+        if (spot.gratuit == true) {
+          badges.add(_chip('Gratuit', Icons.euro_outlined, AppTheme.vertFond, AppTheme.vertDsfr));
+        } else if (spot.gratuit == false) {
+          badges.add(_chip('Payant', Icons.euro, AppTheme.bordureDsfr, AppTheme.griseTexteDsfr));
+        }
+        break;
+
+      case FreshSpotType.fontaine:
+        if (spot.motifIndispo != null) {
+          badges.add(_chip('Hors service · ${spot.motifIndispo}', Icons.warning_amber_outlined, AppTheme.rougeFond, AppTheme.rougeDsfr));
+        }
+        break;
+    }
+
+    if (badges.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Wrap(spacing: 8, runSpacing: 6, children: badges),
+    );
+  }
+
+  static Widget _chip(String label, IconData icon, Color bg, Color fg) {
+    return Chip(
+      avatar: Icon(icon, size: 14, color: fg),
+      label: Text(label, style: TextStyle(fontSize: 12, color: fg, fontWeight: FontWeight.w500)),
+      backgroundColor: bg,
+      side: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }

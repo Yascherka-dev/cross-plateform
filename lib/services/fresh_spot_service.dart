@@ -48,7 +48,8 @@ class FreshSpotService {
         '${AppConfig.espacesVertsFraisDataset}'
         '?limit=${AppConfig.openDataLimit}'
         '&select=identifiant,nom,type,categorie,proportion_vegetation_haute,'
-        'adresse,arrondissement,statut_ouverture,ouvert_24h,canicule_ouverture,geo_point_2d,'
+        'adresse,arrondissement,statut_ouverture,ouvert_24h,canicule_ouverture,'
+        'ouverture_estivale_nocturne,geo_point_2d,'
         'horaires_lundi,horaires_mardi,horaires_mercredi,horaires_jeudi,'
         'horaires_vendredi,horaires_samedi,horaires_dimanche',
       );
