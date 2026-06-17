@@ -20,16 +20,17 @@ class AdviceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 1),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          left:   BorderSide(color: _levelColor, width: 4),
-          bottom: const BorderSide(color: AppTheme.bordureDsfr, width: 1),
+    return Material(
+      color: Colors.white,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 1),
+        decoration: BoxDecoration(
+          border: Border(
+            left:   BorderSide(color: _levelColor, width: 4),
+            bottom: const BorderSide(color: AppTheme.bordureDsfr, width: 1),
+          ),
         ),
-      ),
-      child: ExpansionTile(
+        child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         title: Text(
           card.titre,
@@ -69,6 +70,7 @@ class AdviceTile extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
