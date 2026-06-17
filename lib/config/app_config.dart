@@ -63,9 +63,8 @@ class AppConfig {
   // NUMÉROS D'URGENCE
   // -------------------------
   // Centralisés ici pour pouvoir les modifier facilement
-  static const String numeroSamu              = '15';
-  static const String numeroPompiers          = '18';
-  static const String numeroUrgencesSociales  = '3114';
+  static const String numeroSamu     = '15';
+  static const String numeroPompiers = '18';
 
   // -------------------------
   // SEUILS HEATRISKLEVEL

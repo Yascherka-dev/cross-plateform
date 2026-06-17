@@ -116,10 +116,9 @@ const List<AdviceCard> allAdviceCards = [
     conseils: [
       '15 → SAMU (urgences médicales)',
       '18 → Pompiers',
-      '3114 → Numéro national de prévention du suicide',
       '112 → Numéro européen d\'urgence',
     ],
-    numerosUrgence: ['15', '18', '3114', '112'],
+    numerosUrgence: ['15', '18', '112'],
   ),
 ];
 

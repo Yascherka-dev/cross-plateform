@@ -79,9 +79,8 @@ class SupabaseService {
   // Numéros d'urgence locaux — partagés entre le fallback catch et le fallback RLS
   // Public pour que advice_screen puisse l'utiliser comme fallback snapshot
   static const List<Map<String, dynamic>> emergencyFallback = [
-    {'numero': '15',   'label': 'SAMU',                'description': 'Urgences médicales',                         'ordre': 1},
-    {'numero': '18',   'label': 'Pompiers',             'description': 'Secours et incendie',                        'ordre': 2},
-    {'numero': '3114', 'label': 'Prévention suicide',   'description': 'Numéro national de prévention du suicide',   'ordre': 3},
-    {'numero': '112',  'label': 'Urgences européennes', 'description': "Numéro européen d'urgence",                  'ordre': 4},
+    {'numero': '15',  'label': 'SAMU',                'description': 'Urgences médicales',       'ordre': 1},
+    {'numero': '18',  'label': 'Pompiers',             'description': 'Secours et incendie',       'ordre': 2},
+    {'numero': '112', 'label': 'Urgences européennes', 'description': "Numéro européen d'urgence", 'ordre': 3},
   ];
 }

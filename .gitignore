@@ -45,6 +45,6 @@ app.*.map.json
 /android/app/release
 
 # Credentials Supabase — ne jamais committer ce fichier
-# Copier secrets.example.dart → secrets.dart et remplir les valeurs
-lib/config/secrets.dart
+# Copier .env.example → .env et remplir les valeurs
+.env
 devtools_options.yaml
