@@ -44,13 +44,40 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     // Ouverture directe sur un spot précis (depuis l'accueil ou les favoris).
-    final initial = widget.spotInitial;
-    if (initial != null) {
-      _spotSelectionne = initial;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(LatLng(initial.latitude, initial.longitude), 15);
-      });
+    _focusSpot(widget.spotInitial);
+  }
+
+  @override
+  void didUpdateWidget(MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si le MapScreen est réutilisé (ex. déjà sur l'onglet Carte) et qu'un
+    // nouveau spot est demandé, initState ne se rejoue pas : on réagit ici.
+    if (widget.spotInitial != oldWidget.spotInitial) {
+      _focusSpot(widget.spotInitial);
     }
+  }
+
+  // Retrouve le spot COMPLET chargé sur la carte (avec adresse/horaires/badges)
+  // à partir d'un spot potentiellement partiel (un favori est dénormalisé).
+  // Repli sur le spot fourni s'il n'est pas dans la liste chargée.
+  FreshSpot _spotComplet(FreshSpot spot) {
+    return widget.freshSpots.firstWhere(
+      (s) => s.id == spot.id,
+      orElse: () => spot,
+    );
+  }
+
+  // Centre la carte sur un spot et ouvre SON bottom sheet — le même
+  // (_SpotBottomSheet via _spotSelectionne) que lors d'un tap sur un marqueur.
+  // Appelé depuis initState et didUpdateWidget : un build() suit dans les deux
+  // cas, donc pas besoin de setState (qui déclencherait un avertissement).
+  void _focusSpot(FreshSpot? spot) {
+    if (spot == null) return;
+    final complet = _spotComplet(spot);
+    _spotSelectionne = complet;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.move(LatLng(complet.latitude, complet.longitude), 15);
+    });
   }
 
   List<FreshSpot> get _spotsFiltres {
@@ -129,7 +156,8 @@ class _MapScreenState extends State<MapScreen> {
                   child: Tooltip(
                     message: spot.nom,
                     child: GestureDetector(
-                      onTap: () => setState(() => _spotSelectionne = spot),
+                      onTap: () =>
+                          setState(() => _spotSelectionne = _spotComplet(spot)),
                       child: Container(
                         decoration: BoxDecoration(
                           color: color,
