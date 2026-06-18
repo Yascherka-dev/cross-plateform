@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../logic/heat_risk_level.dart';
+import '../models/weather_data.dart';
 import '../services/auth_service.dart';
+import '../services/supabase_service.dart';
+import '../services/weather_service.dart';
 import '../widgets/icon_pastille.dart';
+import '../widgets/risk_banner.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -84,6 +89,11 @@ class WelcomeScreen extends StatelessWidget {
                 style: AppTheme.body(size: 14, color: AppTheme.texteSecondaire),
               ),
 
+              const SizedBox(height: AppTheme.spacingLg),
+
+              // Aperçu météo Paris (position fixe, pas de géoloc ici)
+              const _ApercuMeteoParis(),
+
               const SizedBox(height: AppTheme.spacingXxl),
 
               // Avantages
@@ -124,6 +134,89 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// Aperçu météo condensé basé sur Paris (coordonnées fixes), SANS géoloc.
+// Discret et non bloquant : disparaît si l'appel réseau échoue.
+class _ApercuMeteoParis extends StatefulWidget {
+  const _ApercuMeteoParis();
+
+  @override
+  State<_ApercuMeteoParis> createState() => _ApercuMeteoParisState();
+}
+
+class _ApercuMeteoParisState extends State<_ApercuMeteoParis> {
+  // Coordonnées fixes de Paris (pas la position de l'utilisateur).
+  static const double _parisLat = 48.8566;
+  static const double _parisLon = 2.3522;
+
+  // Instances locales : le cache météo reste isolé de celui de HomeScreen.
+  final _weatherService = WeatherService();
+  final _supabaseService = SupabaseService();
+
+  late final Future<({WeatherData weather, HeatRiskLevel risk})?> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _charger();
+  }
+
+  Future<({WeatherData weather, HeatRiskLevel risk})?> _charger() async {
+    try {
+      final weather = await _weatherService.fetchWeather(_parisLat, _parisLon);
+      final seuils = await _supabaseService.fetchHeatThresholds();
+      final orange = seuils['orange']!;
+      final rouge = seuils['rouge']!;
+
+      final risk = calculateHeatRisk(
+        temp: weather.temperature,
+        feelsLike: weather.feelsLike,
+        humidity: weather.humidity,
+        uvNow: weather.uvNow,
+        peakTemp: weather.peakTemp,
+        peakUv: weather.peakUv,
+        seuilTempOrange: (orange['seuil_temp'] as num).toDouble(),
+        seuilTempRouge: (rouge['seuil_temp'] as num).toDouble(),
+        seuilUvOrange: (orange['seuil_uv'] as num).toDouble(),
+        seuilUvRouge: (rouge['seuil_uv'] as num).toDouble(),
+        humiditeBoost1: (orange['humidite_boost_1'] as num).toInt(),
+        humiditeBoost2: (orange['humidite_boost_2'] as num).toInt(),
+      );
+
+      return (weather: weather, risk: risk);
+    } catch (_) {
+      // Pas de connexion / API indisponible : on n'affiche rien.
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<({WeatherData weather, HeatRiskLevel risk})?>(
+      future: _future,
+      builder: (context, snapshot) {
+        // Chargement discret (pas de gros spinner qui domine l'écran).
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Text(
+            'Météo à Paris…',
+            style: AppTheme.label(size: 11, color: AppTheme.texteTertiaire),
+          );
+        }
+
+        // Erreur ou pas de données : on n'affiche rien (Welcome normal).
+        final data = snapshot.data;
+        if (data == null) return const SizedBox.shrink();
+
+        // Réutilise RiskBanner en version compacte (source visuelle unique).
+        return RiskBanner(
+          weather: data.weather,
+          riskLevel: data.risk,
+          compact: true,
+        );
+      },
     );
   }
 }

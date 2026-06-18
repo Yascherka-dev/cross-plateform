@@ -1,4 +1,42 @@
+import 'package:flutter/widgets.dart';
+
+import '../config/app_theme.dart';
+
 enum HeatRiskLevel { vert, orange, rouge }
+
+// Style visuel associé à un niveau de risque (couleur, fond, libellé).
+// Source unique de vérité partagée par RiskBanner et l'aperçu météo Welcome.
+class HeatRiskStyle {
+  final Color couleur;
+  final Color fond;
+  final String label;
+
+  const HeatRiskStyle({
+    required this.couleur,
+    required this.fond,
+    required this.label,
+  });
+}
+
+extension HeatRiskLevelStyle on HeatRiskLevel {
+  HeatRiskStyle get style => switch (this) {
+    HeatRiskLevel.vert => const HeatRiskStyle(
+      couleur: AppTheme.vertTexte,
+      fond: AppTheme.vertFond,
+      label: 'Pas de vigilance',
+    ),
+    HeatRiskLevel.orange => const HeatRiskStyle(
+      couleur: AppTheme.orangeTexte,
+      fond: AppTheme.orangeFond,
+      label: 'Vigilance orange',
+    ),
+    HeatRiskLevel.rouge => const HeatRiskStyle(
+      couleur: AppTheme.rougeTexte,
+      fond: AppTheme.rougeFond,
+      label: 'Alerte rouge',
+    ),
+  };
+}
 
 // Calcule le niveau de risque à partir des conditions météo ACTUELLES uniquement.
 //

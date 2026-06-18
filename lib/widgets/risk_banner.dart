@@ -8,30 +8,21 @@ import '../models/weather_data.dart';
 class RiskBanner extends StatelessWidget {
   final HeatRiskLevel riskLevel;
   final WeatherData weather;
+  // compact = version réduite (Welcome) : température + niveau + fond coloré,
+  // sans les lignes de détail (ressenti / UV / humidité / pic).
+  final bool compact;
 
   const RiskBanner({
     super.key,
     required this.riskLevel,
     required this.weather,
+    this.compact = false,
   });
 
-  Color get _riskColor => switch (riskLevel) {
-        HeatRiskLevel.vert => AppTheme.vertTexte,
-        HeatRiskLevel.orange => AppTheme.orangeTexte,
-        HeatRiskLevel.rouge => AppTheme.rougeTexte,
-      };
-
-  Color get _riskBg => switch (riskLevel) {
-        HeatRiskLevel.vert => AppTheme.vertFond,
-        HeatRiskLevel.orange => AppTheme.orangeFond,
-        HeatRiskLevel.rouge => AppTheme.rougeFond,
-      };
-
-  String get _label => switch (riskLevel) {
-        HeatRiskLevel.vert => 'Pas de vigilance',
-        HeatRiskLevel.orange => 'Vigilance orange',
-        HeatRiskLevel.rouge => 'Alerte rouge',
-      };
+  // Mapping niveau → style centralisé dans heat_risk_level.dart (source unique).
+  Color get _riskColor => riskLevel.style.couleur;
+  Color get _riskBg => riskLevel.style.fond;
+  String get _label => riskLevel.style.label;
 
   String get _title => switch (riskLevel) {
         HeatRiskLevel.vert => 'Chaleur modérée',
@@ -59,6 +50,80 @@ class RiskBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return compact ? _buildCompact() : _buildComplet();
+  }
+
+  // Version réduite pour WelcomeScreen : impact visuel (fond coloré + grosse
+  // température + niveau), Paris explicite, pas de lignes de détail.
+  Widget _buildCompact() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacingXl),
+      decoration: BoxDecoration(
+        color: _riskBg,
+        borderRadius: BorderRadius.circular(AppTheme.radiusHero),
+        border: Border.all(color: AppTheme.bordure),
+        boxShadow: AppTheme.ombreImportante,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('VIGILANCE MÉTÉO', style: AppTheme.sectionLabel()),
+              _RiskBadge(
+                label: _label,
+                color: _riskColor,
+                backgroundColor: AppTheme.surface,
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 108,
+                height: 108,
+                child: CustomPaint(
+                  painter: _RiskGaugePainter(
+                    progress: _intensity,
+                    color: _riskColor,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${weather.temperature.round()}°',
+                      style: AppTheme.titre(34),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_title, style: AppTheme.titre(20)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Paris · aujourd’hui',
+                      style: AppTheme.body(
+                        size: 12.5,
+                        color: AppTheme.texteSecondaire,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComplet() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppTheme.spacingXl),
