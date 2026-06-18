@@ -20,7 +20,6 @@ class SupabaseService {
           .order('ordre');
 
       final list = data as List;
-      debugPrint('Supabase advice_cards: ${list.length} fiches reçues');
 
       // Si la liste est vide, RLS bloque probablement la lecture
       // → on active le fallback local plutôt que d'afficher un écran vide
@@ -60,7 +59,6 @@ class SupabaseService {
           .order('ordre');
 
       final list = data as List;
-      debugPrint('Supabase emergency_numbers: ${list.length} numéros reçus');
 
       if (list.isEmpty) {
         debugPrint('emergency_numbers vide — vérifier les politiques RLS dans Supabase');
@@ -77,7 +75,7 @@ class SupabaseService {
   }
 
   // Numéros d'urgence locaux — partagés entre le fallback catch et le fallback RLS
-  // Public pour que advice_screen puisse l'utiliser comme fallback snapshot
+  // Public pour que emergency_screen puisse l'utiliser comme fallback snapshot
   static const List<Map<String, dynamic>> emergencyFallback = [
     {'numero': '15',  'label': 'SAMU',                'description': 'Urgences médicales',       'ordre': 1},
     {'numero': '18',  'label': 'Pompiers',             'description': 'Secours et incendie',       'ordre': 2},
