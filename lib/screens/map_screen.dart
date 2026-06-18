@@ -2,20 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
+import '../services/auth_service.dart';
+import '../services/favoris_service.dart';
+import 'login_screen.dart';
 
 class MapScreen extends StatefulWidget {
   final List<FreshSpot> freshSpots;
   final List<String> sourcesEnEchec;
   final VoidCallback? onRetry;
+  // Si fourni, ouvre directement le détail de ce spot et centre la carte dessus.
+  final FreshSpot? spotInitial;
 
   const MapScreen({
     super.key,
     required this.freshSpots,
     this.sourcesEnEchec = const [],
     this.onRetry,
+    this.spotInitial,
   });
 
   @override
@@ -29,6 +36,19 @@ class _MapScreenState extends State<MapScreen> {
   FreshSpot? _spotSelectionne;
 
   static const LatLng _paris = LatLng(48.8566, 2.3522);
+
+  @override
+  void initState() {
+    super.initState();
+    // Ouverture directe sur un spot précis (depuis l'accueil ou les favoris).
+    final initial = widget.spotInitial;
+    if (initial != null) {
+      _spotSelectionne = initial;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(LatLng(initial.latitude, initial.longitude), 15);
+      });
+    }
+  }
 
   List<FreshSpot> get _spotsFiltres {
     switch (_filtreActif) {
@@ -71,7 +91,9 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final spots = _spotsFiltres;
-    final centre = _centroide(widget.freshSpots);
+    final centre = widget.spotInitial != null
+        ? LatLng(widget.spotInitial!.latitude, widget.spotInitial!.longitude)
+        : _centroide(widget.freshSpots);
 
     return Stack(
       children: [
@@ -293,15 +315,124 @@ class _MapFilterChip extends StatelessWidget {
   }
 }
 
-class _SpotBottomSheet extends StatelessWidget {
+class _SpotBottomSheet extends StatefulWidget {
   final FreshSpot spot;
   final Future<void> Function(FreshSpot spot) ouvrirItineraire;
 
   const _SpotBottomSheet({required this.spot, required this.ouvrirItineraire});
 
+  @override
+  State<_SpotBottomSheet> createState() => _SpotBottomSheetState();
+}
+
+class _SpotBottomSheetState extends State<_SpotBottomSheet> {
+  final _favorisService = FavorisService();
+
+  bool _estFavori = false;
+  bool _verifEnCours = true; // tant qu'on n'a pas lu l'état initial
+
+  FreshSpot get spot => widget.spot;
   Color get _color => spot.type.color;
   Color get _background => spot.type.background;
   IconData get _icon => spot.type.icon;
+
+  @override
+  void initState() {
+    super.initState();
+    _chargerEtatFavori();
+  }
+
+  Future<void> _chargerEtatFavori() async {
+    // Non connecté : pas de favori, on s'arrête là (pas d'appel réseau).
+    if (AuthService().currentUser == null) {
+      setState(() => _verifEnCours = false);
+      return;
+    }
+    try {
+      final favori = await _favorisService.estFavori(spot.id);
+      if (mounted) {
+        setState(() {
+          _estFavori = favori;
+          _verifEnCours = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _verifEnCours = false);
+    }
+  }
+
+  // Toggle favori avec UI optimiste + SnackBar de confirmation.
+  Future<void> _toggleFavori() async {
+    if (AuthService().currentUser == null) {
+      _inviterConnexion();
+      return;
+    }
+
+    final ancien = _estFavori;
+    setState(() => _estFavori = !ancien); // optimiste
+
+    try {
+      if (ancien) {
+        await _favorisService.retirerFavori(spot.id);
+      } else {
+        await _favorisService.ajouterFavori(spot);
+      }
+      _snack(ancien ? 'Retiré des favoris' : 'Ajouté aux favoris');
+    } catch (_) {
+      if (mounted) setState(() => _estFavori = ancien); // rollback
+      _snack('Action impossible. Réessayez.');
+    }
+  }
+
+  // Partage texte (fonctionne sans connexion).
+  Future<void> _partager() async {
+    final texte =
+        '${spot.nom} - ${spot.type.label} - ${spot.adresseFormatee}\n'
+        '📍 Lien Google Maps: https://www.google.com/maps/dir/?api=1'
+        '&destination=${spot.latitude},${spot.longitude}\n'
+        'Trouvé sur SOS Canicule 🌡️';
+    await SharePlus.instance.share(ShareParams(text: texte));
+  }
+
+  void _inviterConnexion() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connexion requise'),
+        content: const Text(
+          'Connectez-vous pour enregistrer vos lieux de fraîcheur favoris.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Plus tard'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: const Text('Se connecter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: AppTheme.body(size: 13, color: Colors.white)),
+        backgroundColor: AppTheme.textePrincipal,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -373,6 +504,31 @@ class _SpotBottomSheet extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: 12),
+
+              // Actions : favori + partage
+              Row(
+                children: [
+                  _ActionRonde(
+                    icon: _estFavori
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: _estFavori
+                        ? AppTheme.rougeTexte
+                        : AppTheme.texteSurface,
+                    tooltip: _estFavori ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                    onTap: _verifEnCours ? null : _toggleFavori,
+                  ),
+                  const SizedBox(width: 10),
+                  _ActionRonde(
+                    icon: Icons.share_rounded,
+                    color: AppTheme.texteSurface,
+                    tooltip: 'Partager',
+                    onTap: _partager,
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 14),
 
               _BadgesContextuels(spot: spot),
@@ -408,13 +564,49 @@ class _SpotBottomSheet extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => ouvrirItineraire(spot),
+                  onPressed: () => widget.ouvrirItineraire(spot),
                   icon: const Icon(Icons.directions_rounded),
                   label: const Text('Itinéraire'),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Bouton d'action rond (favori / partage) stylé selon la DA.
+class _ActionRonde extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _ActionRonde({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppTheme.bordure),
+          ),
+          child: Icon(icon, color: color, size: 20),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_theme.dart';
+import '../services/auth_service.dart';
 import '../logic/heat_risk_level.dart';
 import '../models/weather_data.dart';
 import '../models/fresh_spot.dart';
@@ -13,6 +15,8 @@ import '../widgets/fresh_spot_tile.dart';
 import 'map_screen.dart';
 import 'advice_screen.dart';
 import 'emergency_screen.dart';
+import 'favoris_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final SupabaseService _supabaseService = SupabaseService();
 
   int _currentIndex = 0;
+  FreshSpot? _spotInitial; // spot à ouvrir directement sur la carte
 
   late Future<Map<String, dynamic>> _dataFuture;
   int _refreshKey = 0;
@@ -89,6 +94,22 @@ class _HomeScreenState extends State<HomeScreen> {
     await _dataFuture;
   }
 
+  // Ouvre l'onglet Carte directement sur un spot précis.
+  void _ouvrirSpotSurCarte(FreshSpot spot) {
+    setState(() {
+      _spotInitial = spot;
+      _currentIndex = 1;
+    });
+  }
+
+  // Changement d'onglet manuel : pas d'ouverture automatique de spot.
+  void _changerOnglet(int index) {
+    setState(() {
+      _spotInitial = null;
+      _currentIndex = index;
+    });
+  }
+
   Widget _buildScreen(
     WeatherData weather,
     HeatRiskLevel riskLevel,
@@ -101,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
           freshSpots: freshSpots,
           sourcesEnEchec: sourcesEnEchec,
           onRetry: _refresh,
+          spotInitial: _spotInitial,
         );
       case 2:
         return AdviceScreen(riskLevel: riskLevel);
@@ -144,9 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             _QuickActionsCard(
               freshSpotCount: freshSpots.length,
-              onMapTap: () => setState(() => _currentIndex = 1),
-              onAdviceTap: () => setState(() => _currentIndex = 2),
-              onEmergencyTap: () => setState(() => _currentIndex = 3),
+              onMapTap: () => _changerOnglet(1),
+              onAdviceTap: () => _changerOnglet(2),
+              onEmergencyTap: () => _changerOnglet(3),
             ),
             const SizedBox(height: 24),
             const _SectionTitle('Les plus proches'),
@@ -155,7 +177,10 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(
                 children: [
                   for (final spot in spots) ...[
-                    FreshSpotTile(spot: spot),
+                    GestureDetector(
+                      onTap: () => _ouvrirSpotSurCarte(spot),
+                      child: FreshSpotTile(spot: spot),
+                    ),
                     const SizedBox(height: 9),
                   ],
                 ],
@@ -219,6 +244,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border_rounded),
+            color: AppTheme.texteSecondaire,
+            tooltip: 'Mes favoris',
+            onPressed: () async {
+              // Le tap sur un favori renvoie le spot → ouverture sur la carte.
+              final spot = await Navigator.push<FreshSpot?>(
+                context,
+                MaterialPageRoute(builder: (_) => const FavorisScreen()),
+              );
+              if (spot != null) _ouvrirSpotSurCarte(spot);
+            },
+          ),
+          const _AccountAction(),
           Padding(
             padding: const EdgeInsets.only(right: AppTheme.spacingSm),
             child: IconButton(
@@ -261,8 +300,78 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: _WarmBottomNavigation(
         currentIndex: _currentIndex,
-        onSelected: (index) => setState(() => _currentIndex = index),
+        onSelected: _changerOnglet,
       ),
+    );
+  }
+}
+
+// Point d'entrée connexion/inscription dans l'AppBar.
+// Réagit en temps réel à l'état d'authentification.
+class _AccountAction extends StatelessWidget {
+  const _AccountAction();
+
+  @override
+  Widget build(BuildContext context) {
+    final authService = AuthService();
+
+    return StreamBuilder<AuthState>(
+      stream: authService.authStateChanges,
+      builder: (context, _) {
+        final user = authService.currentUser;
+
+        // Déconnecté : icône neutre → écran de connexion
+        if (user == null) {
+          return IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            color: AppTheme.texteSecondaire,
+            tooltip: 'Se connecter',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+            ),
+          );
+        }
+
+        // Connecté : icône accent + menu (pseudo/email, déconnexion)
+        final pseudo = (user.userMetadata?['pseudo'] as String?)?.trim();
+        final label = (pseudo != null && pseudo.isNotEmpty)
+            ? pseudo
+            : (user.email ?? 'Mon compte');
+
+        return PopupMenuButton<String>(
+          icon: const Icon(
+            Icons.account_circle_rounded,
+            color: AppTheme.accent,
+          ),
+          tooltip: 'Mon compte',
+          color: AppTheme.surface,
+          onSelected: (value) {
+            if (value == 'logout') authService.signOut();
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              enabled: false,
+              child: Text(
+                label,
+                style: AppTheme.body(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  color: AppTheme.textePrincipal,
+                ),
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'logout',
+              child: Text(
+                'Se déconnecter',
+                style: AppTheme.body(size: 13, color: AppTheme.rougeTexte),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
