@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
 
-// Spots reçus depuis HomeScreen — pas de nouvel appel API
 class MapScreen extends StatefulWidget {
   final List<FreshSpot> freshSpots;
-  final List<String> sourcesEnEchec; // sources OpenData KO → bannière info
-  final VoidCallback? onRetry;        // relance le chargement depuis HomeScreen
+  final List<String> sourcesEnEchec;
+  final VoidCallback? onRetry;
+
   const MapScreen({
     super.key,
     required this.freshSpots,
@@ -24,21 +25,32 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final MapController _mapController = MapController();
 
-  // null = tous les types affichés
-  FreshSpotType? _filtreActif;
+  String? _filtreActif;
   FreshSpot? _spotSelectionne;
 
   static const LatLng _paris = LatLng(48.8566, 2.3522);
 
   List<FreshSpot> get _spotsFiltres {
-    if (_filtreActif == null) return widget.freshSpots;
-    return widget.freshSpots.where((s) => s.type == _filtreActif).toList();
+    switch (_filtreActif) {
+      case null:
+        return widget.freshSpots;
+      case 'piscines':
+        return widget.freshSpots.where((s) => s.estPiscineOuBaignade).toList();
+      default:
+        return widget.freshSpots
+            .where((s) => s.type.name == _filtreActif)
+            .toList();
+    }
   }
 
   LatLng _centroide(List<FreshSpot> spots) {
     if (spots.isEmpty) return _paris;
-    final lat = spots.map((s) => s.latitude).reduce((a, b) => a + b) / spots.length;
-    final lon = spots.map((s) => s.longitude).reduce((a, b) => a + b) / spots.length;
+
+    final lat =
+        spots.map((s) => s.latitude).reduce((a, b) => a + b) / spots.length;
+    final lon =
+        spots.map((s) => s.longitude).reduce((a, b) => a + b) / spots.length;
+
     return LatLng(lat, lon);
   }
 
@@ -46,11 +58,11 @@ class _MapScreenState extends State<MapScreen> {
     _mapController.move(_centroide(_spotsFiltres), 14);
   }
 
-  // LaunchMode.externalApplication → Google Maps natif, pas une WebView
   Future<void> _ouvrirItineraire(FreshSpot spot) async {
     final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=${spot.latitude},${spot.longitude}',
     );
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -59,19 +71,16 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final spots = _spotsFiltres;
-    // Centroïde sur TOUS les spots pour stabiliser la caméra initiale
     final centre = _centroide(widget.freshSpots);
 
     return Stack(
       children: [
-
-        // ── 1. CARTE ─────────────────────────────────────────────
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
             initialCenter: centre,
             initialZoom: 14,
-            onTap: (tapPosition, _) => setState(() => _spotSelectionne = null),
+            onTap: (_, _) => setState(() => _spotSelectionne = null),
           ),
           children: [
             TileLayer(
@@ -79,72 +88,119 @@ class _MapScreenState extends State<MapScreen> {
               userAgentPackageName: 'com.example.app1',
             ),
             MarkerLayer(
-              markers: spots.map((spot) => Marker(
-                point: LatLng(spot.latitude, spot.longitude),
-                width: 36,
-                height: 36,
-                child: Tooltip(
-                  message: spot.nom,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _spotSelectionne = spot),
-                    child: CircleAvatar(
-                      backgroundColor: spot.type.color,
-                      radius: 18,
-                      child: Icon(spot.type.icon, color: Colors.white, size: 18),
+              markers: spots.map((spot) {
+                final color = spot.type.color;
+
+                return Marker(
+                  point: LatLng(spot.latitude, spot.longitude),
+                  width: 38,
+                  height: 38,
+                  child: Tooltip(
+                    message: spot.nom,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _spotSelectionne = spot),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: AppTheme.ombreImportante,
+                        ),
+                        child: Icon(
+                          spot.type.icon,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              )).toList(),
+                );
+              }).toList(),
             ),
           ],
         ),
 
-        // ── 2. BANNIÈRE INFO + FILTRES ────────────────────────────
         Positioned(
           top: 12,
-          left: 12,
-          right: 12,
+          left: 0,
+          right: 0,
           child: SafeArea(
             child: Column(
               children: [
-
-                // Données partielles : message non bloquant
                 if (widget.sourcesEnEchec.isNotEmpty) ...[
-                  _BanniereDonnees(
-                    sources: widget.sourcesEnEchec,
-                    onRetry: widget.onRetry,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _BanniereDonnees(
+                      sources: widget.sourcesEnEchec,
+                      onRetry: widget.onRetry,
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],
 
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Wrap(
-                      spacing: 8,
-                      children: [
-                    FilterChip(
-                      label: const Text('Tous'),
-                      selected: _filtreActif == null,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(() {
-                        _filtreActif = null;
-                        _recentrer();
-                      }),
-                    ),
-                    // Re-tapper le chip actif le désélectionne
-                    ...FreshSpotType.values.map((type) => FilterChip(
-                      label: Text(type.label),
-                      selected: _filtreActif == type,
-                      showCheckmark: false,
-                      avatar: Icon(type.icon, size: 16, color: type.color),
-                      onSelected: (selected) => setState(() {
-                        _filtreActif = selected ? type : null;
-                        _recentrer();
-                      }),
-                    )),
-                      ],
-                    ),
+                SizedBox(
+                  height: 46,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: [
+                      _MapFilterChip(
+                        label: 'Tous',
+                        icon: Icons.apps_rounded,
+                        selected: _filtreActif == null,
+                        iconColor: AppTheme.texteSecondaire,
+                        onTap: () {
+                          setState(() => _filtreActif = null);
+                          _recentrer();
+                        },
+                      ),
+                      _MapFilterChip(
+                        label: 'Parcs',
+                        icon: Icons.park_rounded,
+                        selected: _filtreActif == FreshSpotType.parc.name,
+                        iconColor: AppTheme.parcTexte,
+                        onTap: () {
+                          setState(
+                            () => _filtreActif = FreshSpotType.parc.name,
+                          );
+                          _recentrer();
+                        },
+                      ),
+                      _MapFilterChip(
+                        label: 'Fontaines',
+                        icon: Icons.water_drop_rounded,
+                        selected: _filtreActif == FreshSpotType.fontaine.name,
+                        iconColor: AppTheme.fontaineTexte,
+                        onTap: () {
+                          setState(
+                            () => _filtreActif = FreshSpotType.fontaine.name,
+                          );
+                          _recentrer();
+                        },
+                      ),
+                      _MapFilterChip(
+                        label: 'Climatisés',
+                        icon: Icons.ac_unit_rounded,
+                        selected: _filtreActif == FreshSpotType.climatise.name,
+                        iconColor: AppTheme.equipementTexte,
+                        onTap: () {
+                          setState(
+                            () => _filtreActif = FreshSpotType.climatise.name,
+                          );
+                          _recentrer();
+                        },
+                      ),
+                      _MapFilterChip(
+                        label: 'Piscines',
+                        icon: Icons.pool_rounded,
+                        selected: _filtreActif == 'piscines',
+                        iconColor: AppTheme.equipementTexte,
+                        onTap: () {
+                          setState(() => _filtreActif = 'piscines');
+                          _recentrer();
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -152,122 +208,27 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
 
-        // ── 3. BOTTOM SHEET ───────────────────────────────────────
         if (_spotSelectionne != null)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.65,
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.4,
-              minChildSize: 0.2,
-              maxChildSize: 1.0,
-              expand: true,
-              builder: (context, scrollController) {
-                final spot = _spotSelectionne!;
-
-                return Card(
-                  margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: ListView(
-                    controller: scrollController,
-                    children: [
-
-                      // Poignée
-                      Center(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppTheme.bordureDsfr,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-
-                      ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: spot.type.color,
-                          child: Icon(spot.type.icon, color: Colors.white, size: 18),
-                        ),
-                        title: Text(
-                          spot.nom,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(spot.categorie ?? spot.type.label),
-                        trailing: Chip(
-                          label: Text(spot.estOuvert ? 'Ouvert' : 'Fermé'),
-                          backgroundColor: spot.estOuvert ? AppTheme.vertFond : AppTheme.rougeFond,
-                          labelStyle: TextStyle(
-                            color: spot.estOuvert ? AppTheme.vertDsfr : AppTheme.rougeDsfr,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          side: BorderSide.none,
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-
-                      const Divider(),
-
-                      _BadgesContextuels(spot: spot),
-
-                      if (spot.adresseFormatee.isNotEmpty)
-                        ListTile(
-                          leading: const Icon(Icons.location_on_outlined, color: AppTheme.griseTexteDsfr),
-                          title: Text(spot.adresseFormatee),
-                        ),
-
-                      if (spot.description.trim().isNotEmpty)
-                        ListTile(
-                          leading: Icon(
-                            spot.type == FreshSpotType.parc ? Icons.forest : Icons.info_outline,
-                            color: AppTheme.griseTexteDsfr,
-                          ),
-                          title: Text(spot.description),
-                        ),
-
-                      if (spot.distanceLabel.isNotEmpty)
-                        ListTile(
-                          leading: const Icon(Icons.straighten, color: AppTheme.griseTexteDsfr),
-                          title: Text(spot.distanceLabel),
-                        ),
-
-                      const Divider(),
-                      _SectionHoraires(type: spot.type, horaires: spot.horaires),
-
-                      const Divider(),
-
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: ActionChip(
-                            avatar: const Icon(Icons.directions, size: 18),
-                            label: const Text('Itinéraire'),
-                            onPressed: () => _ouvrirItineraire(spot),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+          _SpotBottomSheet(
+            spot: _spotSelectionne!,
+            ouvrirItineraire: _ouvrirItineraire,
           ),
 
-        // ── 4. FAB recentrer ─────────────────────────────────────
-        // heroTag explicite — évite le conflit avec d'autres FAB dans le Scaffold
         Positioned(
           right: 16,
           bottom: 16,
           child: FloatingActionButton.small(
             heroTag: 'map_recentrer',
+            backgroundColor: AppTheme.surface,
+            foregroundColor: AppTheme.accent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppTheme.bordure),
+            ),
             onPressed: _recentrer,
             tooltip: 'Recentrer sur les spots visibles',
-            child: const Icon(Icons.my_location),
+            child: const Icon(Icons.my_location_rounded),
           ),
         ),
       ],
@@ -275,42 +236,288 @@ class _MapScreenState extends State<MapScreen> {
   }
 }
 
-// Bannière discrète : prévient que des données sont indisponibles
+class _MapFilterChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _MapFilterChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final background = selected ? AppTheme.textePrincipal : AppTheme.surface;
+    final foreground = selected ? Colors.white : AppTheme.texteSurface;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
+            border: Border.all(
+              color: selected ? AppTheme.textePrincipal : AppTheme.bordure,
+            ),
+            boxShadow: AppTheme.ombreBase,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: selected ? Colors.white : iconColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: AppTheme.body(
+                  size: 12.5,
+                  weight: FontWeight.w800,
+                  color: foreground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpotBottomSheet extends StatelessWidget {
+  final FreshSpot spot;
+  final Future<void> Function(FreshSpot spot) ouvrirItineraire;
+
+  const _SpotBottomSheet({required this.spot, required this.ouvrirItineraire});
+
+  Color get _color => spot.type.color;
+  Color get _background => spot.type.background;
+  IconData get _icon => spot.type.icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.72,
+        ),
+        decoration: const BoxDecoration(
+          color: AppTheme.fond,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: AppTheme.ombreImportante,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 6, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.poignee,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _background,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(_icon, color: _color, size: 24),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          spot.nom,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.titre(17),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          spot.sousTitre,
+                          style: AppTheme.body(
+                            size: 12,
+                            weight: FontWeight.w600,
+                            color: AppTheme.texteSecondaire,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _OpenBadge(isOpen: spot.estOuvert),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              _BadgesContextuels(spot: spot),
+
+              const Divider(),
+
+              const SizedBox(height: 14),
+
+              if (spot.adresseFormatee.isNotEmpty)
+                _InfoLine(
+                  icon: Icons.location_on_rounded,
+                  text: spot.adresseFormatee,
+                ),
+
+              if (spot.description.trim().isNotEmpty)
+                _InfoLine(
+                  icon: spot.type == FreshSpotType.parc
+                      ? Icons.forest_rounded
+                      : Icons.info_rounded,
+                  text: spot.description,
+                ),
+
+              if (spot.distanceLabel.isNotEmpty)
+                _InfoLine(
+                  icon: Icons.near_me_rounded,
+                  text: 'À ${spot.distanceLabel} de votre position',
+                ),
+
+              _SectionHoraires(type: spot.type, horaires: spot.horaires),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => ouvrirItineraire(spot),
+                  icon: const Icon(Icons.directions_rounded),
+                  label: const Text('Itinéraire'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OpenBadge extends StatelessWidget {
+  final bool isOpen;
+
+  const _OpenBadge({required this.isOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isOpen ? AppTheme.ouvertTexte : AppTheme.fermeTexte;
+    final bg = isOpen ? AppTheme.ouvertFond : AppTheme.fermeFond;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
+      ),
+      child: Text(
+        isOpen ? 'Ouvert' : 'Fermé',
+        style: AppTheme.label(
+          size: 10.5,
+          color: color,
+          weight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _InfoLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 13),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: AppTheme.iconeDiscrete),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTheme.body(
+                size: 13,
+                weight: FontWeight.w500,
+                color: AppTheme.texteSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BanniereDonnees extends StatelessWidget {
   final List<String> sources;
   final VoidCallback? onRetry;
+
   const _BanniereDonnees({required this.sources, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: AppTheme.urgenceFond,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline, size: 18, color: AppTheme.bleuRepublique),
-            const SizedBox(width: 8),
-            Expanded(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: AppTheme.orangeFond,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCarteSmall),
+        border: Border.all(color: AppTheme.bordure),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_rounded, size: 18, color: AppTheme.orangeTexte),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Certaines données sont momentanément indisponibles (${sources.join(', ')}).',
+              style: AppTheme.body(size: 12, color: AppTheme.texteSurface),
+            ),
+          ),
+          if (onRetry != null)
+            TextButton(
+              onPressed: onRetry,
               child: Text(
-                'Certaines données sont momentanément indisponibles '
-                '(${sources.join(', ')}). La carte peut être incomplète.',
-                style: const TextStyle(fontSize: 12, color: AppTheme.titreDsfr),
+                'Réessayer',
+                style: AppTheme.body(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: AppTheme.orangeTexte,
+                ),
               ),
             ),
-            if (onRetry != null)
-              TextButton(
-                onPressed: onRetry,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.bleuRepublique,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Réessayer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -318,6 +525,7 @@ class _BanniereDonnees extends StatelessWidget {
 
 class _BadgesContextuels extends StatelessWidget {
   final FreshSpot spot;
+
   const _BadgesContextuels({required this.spot});
 
   @override
@@ -326,29 +534,71 @@ class _BadgesContextuels extends StatelessWidget {
 
     switch (spot.type) {
       case FreshSpotType.parc:
-        // Badge canicule en premier — info la plus cruciale pour l'app
         if (spot.caniculeOuverture ?? false) {
-          badges.add(_chip('Spécial canicule', Icons.wb_sunny, AppTheme.orangeFond, AppTheme.orangeDsfr));
+          badges.add(
+            _chip(
+              'Spécial canicule',
+              Icons.wb_sunny_rounded,
+              AppTheme.orangeFond,
+              AppTheme.orangeTexte,
+            ),
+          );
         }
         if (spot.ouvert24h ?? false) {
-          badges.add(_chip('Ouvert la nuit', Icons.nightlight, AppTheme.fondDsfr, AppTheme.bleuRepublique));
+          badges.add(
+            _chip(
+              'Ouvert la nuit',
+              Icons.nightlight_round,
+              AppTheme.fontaineFond,
+              AppTheme.fontaineTexte,
+            ),
+          );
         }
         if (spot.ouvertureNocturneEte ?? false) {
-          badges.add(_chip('Nocturne été', Icons.bedtime_outlined, AppTheme.fondDsfr, AppTheme.bleuRepublique));
+          badges.add(
+            _chip(
+              'Nocturne été',
+              Icons.bedtime_rounded,
+              AppTheme.fontaineFond,
+              AppTheme.fontaineTexte,
+            ),
+          );
         }
         break;
 
-      case FreshSpotType.equipement:
+      case FreshSpotType.climatise:
+      case FreshSpotType.piscine:
         if (spot.gratuit == true) {
-          badges.add(_chip('Gratuit', Icons.euro_outlined, AppTheme.vertFond, AppTheme.vertDsfr));
+          badges.add(
+            _chip(
+              'Gratuit',
+              Icons.euro_rounded,
+              AppTheme.vertFond,
+              AppTheme.vertTexte,
+            ),
+          );
         } else if (spot.gratuit == false) {
-          badges.add(_chip('Payant', Icons.euro, AppTheme.bordureDsfr, AppTheme.griseTexteDsfr));
+          badges.add(
+            _chip(
+              'Payant',
+              Icons.euro_rounded,
+              AppTheme.separateur,
+              AppTheme.texteSecondaire,
+            ),
+          );
         }
         break;
 
       case FreshSpotType.fontaine:
         if (spot.motifIndispo != null) {
-          badges.add(_chip('Hors service · ${spot.motifIndispo}', Icons.warning_amber_outlined, AppTheme.rougeFond, AppTheme.rougeDsfr));
+          badges.add(
+            _chip(
+              'Hors service · ${spot.motifIndispo}',
+              Icons.warning_rounded,
+              AppTheme.rougeFond,
+              AppTheme.rougeTexte,
+            ),
+          );
         }
         break;
     }
@@ -356,19 +606,29 @@ class _BadgesContextuels extends StatelessWidget {
     if (badges.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Wrap(spacing: 8, runSpacing: 6, children: badges),
     );
   }
 
   static Widget _chip(String label, IconData icon, Color bg, Color fg) {
-    return Chip(
-      avatar: Icon(icon, size: 14, color: fg),
-      label: Text(label, style: TextStyle(fontSize: 12, color: fg, fontWeight: FontWeight.w500)),
-      backgroundColor: bg,
-      side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: fg),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTheme.label(size: 12, color: fg, weight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -376,32 +636,36 @@ class _BadgesContextuels extends StatelessWidget {
 class _SectionHoraires extends StatelessWidget {
   final FreshSpotType type;
   final Map<String, String>? horaires;
+
   const _SectionHoraires({required this.type, required this.horaires});
 
   static const List<String> _jours = [
-    'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche',
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+    'Dimanche',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.only(top: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: const [
-            Icon(Icons.schedule, size: 16, color: AppTheme.griseTexteDsfr),
-            SizedBox(width: 6),
-            Text("Horaires d'ouverture", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.griseTexteDsfr)),
-          ]),
-          const SizedBox(height: 8),
-          if (type == FreshSpotType.fontaine)
-            const Text('Accès libre', style: TextStyle(fontSize: 13, color: AppTheme.titreDsfr))
-          else if (horaires == null)
-            const Text('Horaires non communiqués', style: TextStyle(fontSize: 13, color: AppTheme.griseTexteDsfr, fontStyle: FontStyle.italic))
-          else
+          _InfoLine(
+            icon: Icons.schedule_rounded,
+            text: type == FreshSpotType.fontaine
+                ? 'Accès libre'
+                : horaires == null
+                ? 'Horaires non communiqués'
+                : "Horaires d'ouverture",
+          ),
+          if (type != FreshSpotType.fontaine && horaires != null)
             ..._buildGrille(horaires!),
-          const SizedBox(height: 4),
         ],
       ),
     );
@@ -409,20 +673,42 @@ class _SectionHoraires extends StatelessWidget {
 
   List<Widget> _buildGrille(Map<String, String> h) {
     final aujourdHui = _jours[DateTime.now().weekday - 1];
+
     return _jours.map((jour) {
       final horaire = h[jour];
       final estAujourd = jour == aujourdHui;
+
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(children: [
-          SizedBox(
-            width: 90,
-            child: Text(jour, style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr)),
-          ),
-          Expanded(
-            child: Text(horaire ?? 'Non communiqué', style: TextStyle(fontSize: 13, fontWeight: estAujourd ? FontWeight.w700 : FontWeight.w400, color: horaire != null ? (estAujourd ? AppTheme.bleuRepublique : AppTheme.titreDsfr) : AppTheme.griseTexteDsfr)),
-          ),
-        ]),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 90,
+              child: Text(
+                jour,
+                style: AppTheme.body(
+                  size: 13,
+                  weight: estAujourd ? FontWeight.w800 : FontWeight.w500,
+                  color: estAujourd ? AppTheme.accent : AppTheme.texteSurface,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                horaire ?? 'Non communiqué',
+                style: AppTheme.body(
+                  size: 13,
+                  weight: estAujourd ? FontWeight.w800 : FontWeight.w500,
+                  color: horaire != null
+                      ? estAujourd
+                            ? AppTheme.accent
+                            : AppTheme.texteSurface
+                      : AppTheme.texteSecondaire,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }).toList();
   }

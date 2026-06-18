@@ -1,39 +1,92 @@
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
 
 enum FreshSpotType {
-  fontaine,
   parc,
-  equipement,
+  fontaine,
+  climatise,
+  piscine,
 }
 
-extension FreshSpotTypeExtension on FreshSpotType {
+extension FreshSpotTypeX on FreshSpotType {
   String get label {
     switch (this) {
-      case FreshSpotType.fontaine:   return 'Fontaine';
-      case FreshSpotType.parc:       return 'Espace vert';
-      case FreshSpotType.equipement: return 'Équipement frais';
+      case FreshSpotType.parc:
+        return 'Parc & jardin';
+      case FreshSpotType.fontaine:
+        return 'Fontaine';
+      case FreshSpotType.climatise:
+        return 'Lieu climatisé';
+      case FreshSpotType.piscine:
+        return 'Piscine & baignade';
     }
-  }
-
-  String get colorHex {
-    switch (this) {
-      case FreshSpotType.fontaine:   return '#0063CB';
-      case FreshSpotType.parc:       return '#18753C';
-      case FreshSpotType.equipement: return '#009099';
-    }
-  }
-
-  Color get color {
-    final hex = colorHex.replaceFirst('#', '');
-    return Color(int.parse('FF$hex', radix: 16));
   }
 
   IconData get icon {
     switch (this) {
-      case FreshSpotType.fontaine:   return Icons.water_drop;
-      case FreshSpotType.parc:       return Icons.park;
-      case FreshSpotType.equipement: return Icons.ac_unit;
+      case FreshSpotType.parc:
+        return Icons.park_rounded;
+      case FreshSpotType.fontaine:
+        return Icons.water_drop_rounded;
+      case FreshSpotType.climatise:
+        return Icons.ac_unit_rounded;
+      case FreshSpotType.piscine:
+        return Icons.pool_rounded;
     }
+  }
+
+  Color get color {
+    switch (this) {
+      case FreshSpotType.parc:
+        return AppTheme.parcTexte;
+      case FreshSpotType.fontaine:
+        return AppTheme.fontaineTexte;
+      case FreshSpotType.climatise:
+        return AppTheme.equipementTexte;
+      case FreshSpotType.piscine:
+        return AppTheme.fontaineTexte;
+    }
+  }
+
+  Color get background {
+    switch (this) {
+      case FreshSpotType.parc:
+        return AppTheme.parcFond;
+      case FreshSpotType.fontaine:
+        return AppTheme.fontaineFond;
+      case FreshSpotType.climatise:
+        return AppTheme.equipementFond;
+      case FreshSpotType.piscine:
+        return AppTheme.fontaineFond;
+    }
+  }
+}
+
+FreshSpotType freshSpotTypeFromString(String value) {
+  final v = value.toLowerCase().trim();
+
+  switch (v) {
+    case 'parc':
+    case 'jardin':
+      return FreshSpotType.parc;
+
+    case 'fontaine':
+      return FreshSpotType.fontaine;
+
+    case 'climatise':
+    case 'climatisé':
+    case 'equipement':
+    case 'équipement':
+    case 'lieu_climatise':
+      return FreshSpotType.climatise;
+
+    case 'piscine':
+    case 'baignade':
+    case 'piscine_baignade':
+      return FreshSpotType.piscine;
+
+    default:
+      return FreshSpotType.climatise;
   }
 }
 
@@ -82,6 +135,13 @@ class FreshSpot {
     this.motifIndispo,
   });
 
+  // Piscines & baignades sont issues du dataset équipements (type "Piscine"
+  // ou "Baignade extérieure") mais affichées comme une catégorie à part
+  bool get estPiscineOuBaignade => type == FreshSpotType.piscine;
+
+  // Sous-titre affiché sous le nom (bottom sheet) : la catégorie du lieu
+  String get sousTitre => type.label;
+
   // ── Dataset: ilots-de-fraicheur-espaces-verts-frais ─────────────────────
   factory FreshSpot.fromJsonEspaceVert(Map<String, dynamic> json) {
     final geo = json['geo_point_2d'] ?? {};
@@ -127,13 +187,19 @@ class FreshSpot {
 
     final bool estGratuit = json['payant'] == 'Non';
 
+    // Le champ "type" distingue piscines/baignades des autres équipements
+    final String typeBrut = json['type']?.toString() ?? '';
+    final String typeNorm = typeBrut.toLowerCase();
+    final bool estPiscine =
+        typeNorm.contains('piscine') || typeNorm.contains('baignade');
+
     return FreshSpot(
       id:             json['identifiant']?.toString() ?? 'eq_unknown',
       nom:            json['nom'] ?? 'Équipement frais',
-      type:           FreshSpotType.equipement,
+      type:           estPiscine ? FreshSpotType.piscine : FreshSpotType.climatise,
       latitude:       (geo['lat'] ?? 0.0).toDouble(),
       longitude:      (geo['lon'] ?? 0.0).toDouble(),
-      description:    json['type']?.toString() ?? 'Équipement',
+      description:    typeBrut.isNotEmpty ? typeBrut : 'Équipement',
       adresse:        json['adresse'] ?? '',
       arrondissement: json['arrondissement']?.toString(),
       estOuvert:      estOuvert,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../config/app_theme.dart';
 import '../logic/heat_risk_level.dart';
 import '../models/weather_data.dart';
@@ -21,11 +22,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-  final WeatherService   _weatherService   = WeatherService();
-  final LocationService  _locationService  = LocationService();
+  final WeatherService _weatherService = WeatherService();
+  final LocationService _locationService = LocationService();
   final FreshSpotService _freshSpotService = FreshSpotService();
-  final SupabaseService  _supabaseService  = SupabaseService();
+  final SupabaseService _supabaseService = SupabaseService();
 
   int _currentIndex = 0;
 
@@ -55,31 +55,31 @@ class _HomeScreenState extends State<HomeScreen> {
     ]);
 
     final spotsResult = parallelResults[0] as FreshSpotResult;
-    final thresholds  = parallelResults[1] as Map<String, Map<String, dynamic>>;
+    final thresholds = parallelResults[1] as Map<String, Map<String, dynamic>>;
 
     final orange = thresholds['orange'];
-    final rouge  = thresholds['rouge'];
+    final rouge = thresholds['rouge'];
 
     final riskLevel = calculateHeatRisk(
-      temp:      weather.temperature,
+      temp: weather.temperature,
       feelsLike: weather.feelsLike,
-      humidity:  weather.humidity,
-      uvNow:     weather.uvNow,
-      peakTemp:  weather.peakTemp,
-      peakUv:    weather.peakUv,
-      seuilTempOrange: (orange!['seuil_temp']       as num).toDouble(),
-      seuilTempRouge:  (rouge!['seuil_temp']        as num).toDouble(),
-      seuilUvOrange:   (orange['seuil_uv']          as num).toDouble(),
-      seuilUvRouge:    (rouge['seuil_uv']           as num).toDouble(),
-      humiditeBoost1:  (orange['humidite_boost_1']  as num).toInt(),
-      humiditeBoost2:  (orange['humidite_boost_2']  as num).toInt(),
+      humidity: weather.humidity,
+      uvNow: weather.uvNow,
+      peakTemp: weather.peakTemp,
+      peakUv: weather.peakUv,
+      seuilTempOrange: (orange!['seuil_temp'] as num).toDouble(),
+      seuilTempRouge: (rouge!['seuil_temp'] as num).toDouble(),
+      seuilUvOrange: (orange['seuil_uv'] as num).toDouble(),
+      seuilUvRouge: (rouge['seuil_uv'] as num).toDouble(),
+      humiditeBoost1: (orange['humidite_boost_1'] as num).toInt(),
+      humiditeBoost2: (orange['humidite_boost_2'] as num).toInt(),
     );
 
     return {
-      'weather':         weather,
-      'riskLevel':       riskLevel,
-      'freshSpots':      spotsResult.spots,
-      'sourcesEnEchec':  spotsResult.sourcesEnEchec,
+      'weather': weather,
+      'riskLevel': riskLevel,
+      'freshSpots': spotsResult.spots,
+      'sourcesEnEchec': spotsResult.sourcesEnEchec,
     };
   }
 
@@ -119,119 +119,49 @@ class _HomeScreenState extends State<HomeScreen> {
     final spots = freshSpots.take(3).toList();
 
     return RefreshIndicator(
+      color: AppTheme.accent,
+      backgroundColor: AppTheme.surface,
       onRefresh: _refresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+          AppTheme.spacingLg,
+          AppTheme.spacingSm,
+          AppTheme.spacingLg,
+          AppTheme.spacingXxl,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // Bannière niveau de risque
-            RiskBanner(riskLevel: riskLevel, weather: weather),
-
+            RiskBanner(
+              riskLevel: riskLevel,
+              weather: weather,
+            ),
+            const SizedBox(height: 14),
+            const _HydrationReminder(),
             const SizedBox(height: 24),
-
-            // Section "Que faire ?"
-            const Text(
-              'Que faire ?',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.titreDsfr,
-              ),
+            const _SectionTitle('Que faire ?'),
+            const SizedBox(height: 10),
+            _QuickActionsCard(
+              freshSpotCount: freshSpots.length,
+              onMapTap: () => setState(() => _currentIndex = 1),
+              onAdviceTap: () => setState(() => _currentIndex = 2),
+              onEmergencyTap: () => setState(() => _currentIndex = 3),
             ),
-
-            const SizedBox(height: 12),
-
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: const Icon(Icons.location_on_outlined, color: AppTheme.bleuRepublique),
-                    title: const Text(
-                      'Points de fraîcheur',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-                    subtitle: Text(
-                      '${freshSpots.length} lieux autour de vous',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 14,
-                      color: AppTheme.griseTexteDsfr,
-                    ),
-                    onTap: () => setState(() => _currentIndex = 1),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: const Icon(Icons.health_and_safety_outlined, color: AppTheme.bleuRepublique),
-                    title: const Text(
-                      'Conseils',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-                    subtitle: const Text(
-                      "Signes, gestes de prévention",
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 14,
-                      color: AppTheme.griseTexteDsfr,
-                    ),
-                    onTap: () => setState(() => _currentIndex = 2),
-                  ),
-                   const Divider(height: 1),
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: const Icon(Icons.emergency_outlined, color: AppTheme.bleuRepublique),
-                    title: const Text(
-                      'Urgence immédiate',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                    ),
-                    subtitle: const Text(
-                      "Numéros d'urgence",
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 14,
-                      color: AppTheme.griseTexteDsfr,
-                    ),
-                    onTap: () => setState(() => _currentIndex = 3),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 24),
-
-            // Section "Les plus proches de vous"
-            const Text(
-              'Les plus proches de vous',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.titreDsfr,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
+            const _SectionTitle('Les plus proches'),
+            const SizedBox(height: 10),
             if (spots.isNotEmpty)
-              Card(
-                child: Column(
-                  children: [
-                    for (int i = 0; i < spots.length; i++) ...[
-                      if (i > 0) const Divider(height: 1),
-                      FreshSpotTile(spot: spots[i]),
-                    ],
+              Column(
+                children: [
+                  for (final spot in spots) ...[
+                    FreshSpotTile(spot: spot),
+                    const SizedBox(height: 9),
                   ],
-                ),
-              ),
+                ],
+              )
+            else
+              const _EmptyFreshSpotsCard(),
           ],
         ),
       ),
@@ -241,104 +171,570 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.fondDsfr,
-
+      backgroundColor: AppTheme.fond,
       appBar: AppBar(
+        backgroundColor: AppTheme.fond,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: AppTheme.spacingLg,
         title: Row(
           children: [
-            Image.asset('assets/images/logo48.png', height: 32),
-            const SizedBox(width: 10),
-            const Text('SOS Canicule'),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppTheme.accent,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                'assets/images/logo48.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) {
+                  return const Icon(
+                    Icons.wb_sunny_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 11),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SOS Canicule',
+                  style: AppTheme.titre(16),
+                ),
+                Text(
+                  'Paris · à l’instant',
+                  style: AppTheme.label(
+                    size: 10.5,
+                    color: AppTheme.texteSecondaire,
+                    weight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _refresh(),
-            tooltip: 'Actualiser',
+          Padding(
+            padding: const EdgeInsets.only(right: AppTheme.spacingSm),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              color: AppTheme.texteSecondaire,
+              onPressed: _refresh,
+              tooltip: 'Actualiser',
+            ),
           ),
         ],
       ),
-
       body: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
         future: _dataFuture,
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: AppTheme.bleuRepublique),
-                  SizedBox(height: 16),
-                  Text('Récupération de votre position...'),
-                ],
-              ),
-            );
+            return const _LoadingState();
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.location_off,
-                      size: 64,
-                      color: AppTheme.rougeDsfr,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => _refresh(),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
+            return _ErrorState(
+              message: snapshot.error.toString(),
+              onRetry: _refresh,
             );
           }
 
-          final data           = snapshot.data!;
-          final weather        = data['weather']        as WeatherData;
-          final riskLevel      = data['riskLevel']      as HeatRiskLevel;
-          final freshSpots     = data['freshSpots']     as List<FreshSpot>;
+          final data = snapshot.data!;
+          final weather = data['weather'] as WeatherData;
+          final riskLevel = data['riskLevel'] as HeatRiskLevel;
+          final freshSpots = data['freshSpots'] as List<FreshSpot>;
           final sourcesEnEchec = data['sourcesEnEchec'] as List<String>;
-          return _buildScreen(weather, riskLevel, freshSpots, sourcesEnEchec);
+
+          return _buildScreen(
+            weather,
+            riskLevel,
+            freshSpots,
+            sourcesEnEchec,
+          );
         },
       ),
+      bottomNavigationBar: _WarmBottomNavigation(
+        currentIndex: _currentIndex,
+        onSelected: (index) => setState(() => _currentIndex = index),
+      ),
+    );
+  }
+}
 
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Accueil',
+class _HydrationReminder extends StatelessWidget {
+  const _HydrationReminder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 15,
+        vertical: 13,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCarte),
+        border: Border.all(color: AppTheme.bordure),
+        boxShadow: AppTheme.ombreBase,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.fontaineFond,
+              borderRadius: BorderRadius.circular(AppTheme.radiusPetit),
+            ),
+            child: const Icon(
+              Icons.water_drop_rounded,
+              color: AppTheme.fontaineTexte,
+              size: 20,
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Carte',
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pensez à vous hydrater',
+                  style: AppTheme.body(
+                    size: 13.5,
+                    weight: FontWeight.w700,
+                    color: AppTheme.textePrincipal,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  "Un verre d'eau toutes les heures",
+                  style: AppTheme.body(
+                    size: 11.5,
+                    color: AppTheme.texteSecondaire,
+                  ),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.health_and_safety_outlined),
-            selectedIcon: Icon(Icons.health_and_safety),
-            label: 'Conseils',
+          const _HydrationDots(),
+        ],
+      ),
+    );
+  }
+}
+
+class _HydrationDots extends StatelessWidget {
+  const _HydrationDots();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (index) {
+        final active = index < 3;
+
+        return Container(
+          width: 6,
+          height: 6,
+          margin: const EdgeInsets.only(left: 4),
+          decoration: BoxDecoration(
+            color: active ? AppTheme.fontaineTexte : AppTheme.fontaineFond,
+            shape: BoxShape.circle,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.emergency_outlined),
-            selectedIcon: Icon(Icons.emergency),
-            label: 'Urgences',
+        );
+      }),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        text.toUpperCase(),
+        style: AppTheme.sectionLabel(),
+      ),
+    );
+  }
+}
+
+class _QuickActionsCard extends StatelessWidget {
+  final int freshSpotCount;
+  final VoidCallback onMapTap;
+  final VoidCallback onAdviceTap;
+  final VoidCallback onEmergencyTap;
+
+  const _QuickActionsCard({
+    required this.freshSpotCount,
+    required this.onMapTap,
+    required this.onAdviceTap,
+    required this.onEmergencyTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCarte),
+        border: Border.all(color: AppTheme.bordure),
+        boxShadow: AppTheme.ombreBase,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          _QuickActionTile(
+            icon: Icons.pin_drop_rounded,
+            iconColor: AppTheme.fontaineTexte,
+            iconBackground: AppTheme.fontaineFond,
+            title: 'Points de fraîcheur',
+            subtitle: '$freshSpotCount lieux autour de vous',
+            onTap: onMapTap,
+          ),
+          const Divider(),
+          _QuickActionTile(
+            icon: Icons.health_and_safety_rounded,
+            iconColor: AppTheme.parcTexte,
+            iconBackground: AppTheme.parcFond,
+            title: 'Conseils',
+            subtitle: 'Signes & gestes de prévention',
+            onTap: onAdviceTap,
+          ),
+          const Divider(),
+          _QuickActionTile(
+            icon: Icons.emergency_rounded,
+            iconColor: AppTheme.rougeTexte,
+            iconBackground: AppTheme.rougeFond,
+            title: 'Urgence immédiate',
+            subtitle: "Numéros d'urgence",
+            onTap: onEmergencyTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      highlightColor: AppTheme.fond,
+      splashColor: AppTheme.fond,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 14,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTheme.body(
+                      size: 14,
+                      weight: FontWeight.w700,
+                      color: AppTheme.textePrincipal,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: AppTheme.body(
+                      size: 12,
+                      color: AppTheme.texteSecondaire,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.iconeDiscrete,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyFreshSpotsCard extends StatelessWidget {
+  const _EmptyFreshSpotsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacingLg),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCarte),
+        border: Border.all(color: AppTheme.bordure),
+        boxShadow: AppTheme.ombreBase,
+      ),
+      child: Text(
+        'Aucun point de fraîcheur trouvé autour de vous pour le moment.',
+        style: AppTheme.body(
+          size: 13,
+          color: AppTheme.texteSecondaire,
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.spacingXl),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radiusCarte),
+          border: Border.all(color: AppTheme.bordure),
+          boxShadow: AppTheme.ombreBase,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              color: AppTheme.accent,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Récupération de votre position...',
+              style: AppTheme.body(
+                size: 13,
+                color: AppTheme.texteSecondaire,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingXxl),
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.spacingXl),
+          decoration: BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusHero),
+            border: Border.all(color: AppTheme.bordure),
+            boxShadow: AppTheme.ombreBase,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.location_off_rounded,
+                size: 56,
+                color: AppTheme.rougeTexte,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTheme.body(
+                  size: 14,
+                  color: AppTheme.texteSurface,
+                ),
+              ),
+              const SizedBox(height: 22),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: const Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WarmBottomNavigation extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onSelected;
+
+  const _WarmBottomNavigation({
+    required this.currentIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      const _WarmNavItem(
+        label: 'Accueil',
+        icon: Icons.home_rounded,
+      ),
+      const _WarmNavItem(
+        label: 'Carte',
+        icon: Icons.map_rounded,
+      ),
+      const _WarmNavItem(
+        label: 'Conseils',
+        icon: Icons.health_and_safety_rounded,
+      ),
+      const _WarmNavItem(
+        label: 'Urgences',
+        icon: Icons.emergency_rounded,
+      ),
+    ];
+
+    return Container(
+      height: 72,
+      decoration: const BoxDecoration(
+        color: AppTheme.fond,
+        border: Border(
+          top: BorderSide(color: AppTheme.separateur),
+        ),
+      ),
+      child: Row(
+        children: [
+          for (int i = 0; i < items.length; i++)
+            Expanded(
+              child: _WarmNavButton(
+                item: items[i],
+                active: i == currentIndex,
+                onTap: () => onSelected(i),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WarmNavItem {
+  final String label;
+  final IconData icon;
+
+  const _WarmNavItem({
+    required this.label,
+    required this.icon,
+  });
+}
+
+class _WarmNavButton extends StatelessWidget {
+  final _WarmNavItem item;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _WarmNavButton({
+    required this.item,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? AppTheme.accent : AppTheme.texteTertiaire;
+
+    return InkWell(
+      onTap: onTap,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: active ? 20 : 0,
+            height: 3,
+            decoration: BoxDecoration(
+              color: AppTheme.accent,
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(3),
+              ),
+            ),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    item.icon,
+                    color: color,
+                    size: 23,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    item.label,
+                    style: AppTheme.label(
+                      size: 10,
+                      color: color,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

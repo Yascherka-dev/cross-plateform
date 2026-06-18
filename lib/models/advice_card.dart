@@ -9,6 +9,7 @@ class AdviceCard {
   final HeatRiskLevel niveau;       // niveau à partir duquel la fiche s'affiche
   final List<String> conseils;      // liste des conseils à afficher
   final List<String> numerosUrgence; // numéros à appeler si besoin
+  final String? imageUrl;           // illustration hébergée dans Supabase Storage
 
   const AdviceCard({
     required this.id,
@@ -16,6 +17,7 @@ class AdviceCard {
     required this.niveau,
     required this.conseils,
     required this.numerosUrgence,
+    this.imageUrl,
   });
 
   // Désérialisation depuis la table Supabase `advice_cards`
@@ -31,6 +33,7 @@ class AdviceCard {
                       ),
       conseils:       List<String>.from(json['conseils'] as List),
       numerosUrgence: List<String>.from(json['numeros_urgence'] as List),
+      imageUrl:       json['image_url'] as String?,
     );
   }
 }
