@@ -8,6 +8,9 @@ import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
 import '../services/auth_service.dart';
 import '../services/favoris_service.dart';
+import '../widgets/app_snackbar.dart';
+import '../widgets/icon_pastille.dart';
+import '../widgets/round_icon_button.dart';
 import 'login_screen.dart';
 
 class MapScreen extends StatefulWidget {
@@ -76,6 +79,12 @@ class _MapScreenState extends State<MapScreen> {
 
   void _recentrer() {
     _mapController.move(_centroide(_spotsFiltres), 14);
+  }
+
+  // Applique un filtre puis recentre la carte sur les spots correspondants.
+  void _appliquerFiltre(String? value) {
+    setState(() => _filtreActif = value);
+    _recentrer();
   }
 
   Future<void> _ouvrirItineraire(FreshSpot spot) async {
@@ -160,70 +169,9 @@ class _MapScreenState extends State<MapScreen> {
                   const SizedBox(height: 8),
                 ],
 
-                SizedBox(
-                  height: 46,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      _MapFilterChip(
-                        label: 'Tous',
-                        icon: Icons.apps_rounded,
-                        selected: _filtreActif == null,
-                        iconColor: AppTheme.texteSecondaire,
-                        onTap: () {
-                          setState(() => _filtreActif = null);
-                          _recentrer();
-                        },
-                      ),
-                      _MapFilterChip(
-                        label: 'Parcs',
-                        icon: Icons.park_rounded,
-                        selected: _filtreActif == FreshSpotType.parc.name,
-                        iconColor: AppTheme.parcTexte,
-                        onTap: () {
-                          setState(
-                            () => _filtreActif = FreshSpotType.parc.name,
-                          );
-                          _recentrer();
-                        },
-                      ),
-                      _MapFilterChip(
-                        label: 'Fontaines',
-                        icon: Icons.water_drop_rounded,
-                        selected: _filtreActif == FreshSpotType.fontaine.name,
-                        iconColor: AppTheme.fontaineTexte,
-                        onTap: () {
-                          setState(
-                            () => _filtreActif = FreshSpotType.fontaine.name,
-                          );
-                          _recentrer();
-                        },
-                      ),
-                      _MapFilterChip(
-                        label: 'Climatisés',
-                        icon: Icons.ac_unit_rounded,
-                        selected: _filtreActif == FreshSpotType.climatise.name,
-                        iconColor: AppTheme.equipementTexte,
-                        onTap: () {
-                          setState(
-                            () => _filtreActif = FreshSpotType.climatise.name,
-                          );
-                          _recentrer();
-                        },
-                      ),
-                      _MapFilterChip(
-                        label: 'Piscines',
-                        icon: Icons.pool_rounded,
-                        selected: _filtreActif == 'piscines',
-                        iconColor: AppTheme.equipementTexte,
-                        onTap: () {
-                          setState(() => _filtreActif = 'piscines');
-                          _recentrer();
-                        },
-                      ),
-                    ],
-                  ),
+                _BarreFiltres(
+                  filtreActif: _filtreActif,
+                  onFiltre: _appliquerFiltre,
                 ),
               ],
             ),
@@ -424,14 +372,7 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
 
   void _snack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: AppTheme.body(size: 13, color: Colors.white)),
-        backgroundColor: AppTheme.textePrincipal,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    afficherSnack(context, message);
   }
 
   @override
@@ -468,14 +409,13 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
 
               Row(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _background,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(_icon, color: _color, size: 24),
+                  IconPastille(
+                    icon: _icon,
+                    color: _color,
+                    background: _background,
+                    size: 48,
+                    radius: 14,
+                    iconSize: 24,
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -509,18 +449,20 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
               // Actions : favori + partage
               Row(
                 children: [
-                  _ActionRonde(
+                  RoundIconButton(
                     icon: _estFavori
                         ? Icons.favorite_rounded
                         : Icons.favorite_border_rounded,
                     color: _estFavori
                         ? AppTheme.rougeTexte
                         : AppTheme.texteSurface,
-                    tooltip: _estFavori ? 'Retirer des favoris' : 'Ajouter aux favoris',
+                    tooltip: _estFavori
+                        ? 'Retirer des favoris'
+                        : 'Ajouter aux favoris',
                     onTap: _verifEnCours ? null : _toggleFavori,
                   ),
                   const SizedBox(width: 10),
-                  _ActionRonde(
+                  RoundIconButton(
                     icon: Icons.share_rounded,
                     color: AppTheme.texteSurface,
                     tooltip: 'Partager',
@@ -577,37 +519,64 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
   }
 }
 
-// Bouton d'action rond (favori / partage) stylé selon la DA.
-class _ActionRonde extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback? onTap;
+// Barre horizontale de filtres de la carte (chips générés depuis une liste).
+class _BarreFiltres extends StatelessWidget {
+  final String? filtreActif;
+  final void Function(String?) onFiltre;
 
-  const _ActionRonde({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    this.onTap,
-  });
+  const _BarreFiltres({required this.filtreActif, required this.onFiltre});
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.bordure),
+    // (libellé, icône, couleur, valeur de filtre)
+    final filtres =
+        <({String label, IconData icon, Color couleur, String? valeur})>[
+          (
+            label: 'Tous',
+            icon: Icons.apps_rounded,
+            couleur: AppTheme.texteSecondaire,
+            valeur: null,
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
+          (
+            label: 'Parcs',
+            icon: Icons.park_rounded,
+            couleur: AppTheme.parcTexte,
+            valeur: FreshSpotType.parc.name,
+          ),
+          (
+            label: 'Fontaines',
+            icon: Icons.water_drop_rounded,
+            couleur: AppTheme.fontaineTexte,
+            valeur: FreshSpotType.fontaine.name,
+          ),
+          (
+            label: 'Climatisés',
+            icon: Icons.ac_unit_rounded,
+            couleur: AppTheme.equipementTexte,
+            valeur: FreshSpotType.climatise.name,
+          ),
+          (
+            label: 'Piscines',
+            icon: Icons.pool_rounded,
+            couleur: AppTheme.equipementTexte,
+            valeur: 'piscines',
+          ),
+        ];
+
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: filtres.map((f) {
+          return _MapFilterChip(
+            label: f.label,
+            icon: f.icon,
+            selected: filtreActif == f.valeur,
+            iconColor: f.couleur,
+            onTap: () => onFiltre(f.valeur),
+          );
+        }).toList(),
       ),
     );
   }

@@ -67,14 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Content de vous revoir', style: AppTheme.titre(24)),
-                const SizedBox(height: AppTheme.spacingSm),
-                Text(
-                  'Connectez-vous pour retrouver votre profil.',
-                  style: AppTheme.body(
-                    size: 13,
-                    color: AppTheme.texteSecondaire,
-                  ),
+                const AuthHeader(
+                  title: 'Content de vous revoir',
+                  subtitle: 'Connectez-vous pour retrouver votre profil.',
                 ),
                 const SizedBox(height: AppTheme.spacingXxl),
 
@@ -83,14 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   label: 'Email',
                   hint: 'vous@exemple.fr',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    final value = v?.trim() ?? '';
-                    if (value.isEmpty) return 'Email requis';
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Adresse email invalide';
-                    }
-                    return null;
-                  },
+                  validator: validerEmail,
                 ),
                 const SizedBox(height: AppTheme.spacingLg),
 
@@ -110,37 +98,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: AppTheme.spacingXxl),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _seConnecter,
-                    child: _loading
-                        ? const AuthButtonLoader()
-                        : const Text('Se connecter'),
-                  ),
+                AuthSubmitButton(
+                  label: 'Se connecter',
+                  loading: _loading,
+                  onPressed: _seConnecter,
                 ),
 
                 const SizedBox(height: AppTheme.spacingLg),
 
-                Center(
-                  child: TextButton(
-                    onPressed: _loading
-                        ? null
-                        : () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
+                AuthLink(
+                  text: "Pas encore de compte ? S'inscrire",
+                  onPressed: _loading
+                      ? null
+                      : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
                           ),
-                    child: Text(
-                      "Pas encore de compte ? S'inscrire",
-                      style: AppTheme.body(
-                        size: 13,
-                        weight: FontWeight.w700,
-                        color: AppTheme.accent,
-                      ),
-                    ),
-                  ),
+                        ),
                 ),
               ],
             ),

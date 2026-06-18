@@ -4,7 +4,10 @@ import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
 import '../services/auth_service.dart';
 import '../services/favoris_service.dart';
+import '../widgets/app_snackbar.dart';
 import '../widgets/fresh_spot_tile.dart';
+import '../widgets/message_etat.dart';
+import '../widgets/round_icon_button.dart';
 import 'login_screen.dart';
 
 // Écran listant les favoris de l'utilisateur connecté.
@@ -41,19 +44,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
     try {
       await _favorisService.retirerFavori(spot.id);
       await _refresh();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Retiré des favoris',
-              style: AppTheme.body(size: 13, color: Colors.white),
-            ),
-            backgroundColor: AppTheme.textePrincipal,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      if (mounted) afficherSnack(context, 'Retiré des favoris');
     } catch (_) {
       /* erreur silencieuse : la liste reste inchangée */
     }
@@ -103,7 +94,11 @@ class _FavorisScreenState extends State<FavorisScreen> {
                           children: [
                             Expanded(child: FreshSpotTile(spot: spot)),
                             const SizedBox(width: AppTheme.spacingSm),
-                            _BoutonRetirer(onTap: () => _retirer(spot)),
+                            RoundIconButton(
+                              icon: Icons.favorite_rounded,
+                              color: AppTheme.rougeTexte,
+                              onTap: () => _retirer(spot),
+                            ),
                           ],
                         ),
                       );
@@ -116,34 +111,6 @@ class _FavorisScreenState extends State<FavorisScreen> {
   }
 }
 
-// Bouton cœur plein pour retirer un favori.
-class _BoutonRetirer extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BoutonRetirer({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTheme.radiusBadge),
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppTheme.bordure),
-        ),
-        child: const Icon(
-          Icons.favorite_rounded,
-          color: AppTheme.rougeTexte,
-          size: 20,
-        ),
-      ),
-    );
-  }
-}
-
 // État : utilisateur non connecté.
 class _EtatNonConnecte extends StatelessWidget {
   @override
@@ -151,29 +118,14 @@ class _EtatNonConnecte extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingXxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.favorite_border_rounded,
-              size: 56,
-              color: AppTheme.texteTertiaire,
-            ),
-            const SizedBox(height: AppTheme.spacingLg),
-            Text(
-              'Connectez-vous pour retrouver vos lieux favoris.',
-              textAlign: TextAlign.center,
-              style: AppTheme.body(size: 14, color: AppTheme.texteSecondaire),
-            ),
-            const SizedBox(height: AppTheme.spacingXl),
-            ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              ),
-              child: const Text('Se connecter'),
-            ),
-          ],
+        child: MessageEtat(
+          icon: Icons.favorite_border_rounded,
+          message: 'Connectez-vous pour retrouver vos lieux favoris.',
+          actionLabel: 'Se connecter',
+          onAction: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          ),
         ),
       ),
     );
@@ -189,19 +141,13 @@ class _EtatVide extends StatelessWidget {
     // ListView pour permettre le pull-to-refresh même quand c'est vide.
     return ListView(
       padding: const EdgeInsets.all(AppTheme.spacingXxl),
-      children: [
-        const SizedBox(height: 80),
-        const Icon(
-          Icons.map_rounded,
-          size: 56,
-          color: AppTheme.texteTertiaire,
-        ),
-        const SizedBox(height: AppTheme.spacingLg),
-        Text(
-          'Aucun favori pour le moment.\n'
-          'Explorez la carte et touchez le cœur pour en ajouter.',
-          textAlign: TextAlign.center,
-          style: AppTheme.body(size: 14, color: AppTheme.texteSecondaire),
+      children: const [
+        SizedBox(height: 80),
+        MessageEtat(
+          icon: Icons.map_rounded,
+          message:
+              'Aucun favori pour le moment.\n'
+              'Explorez la carte et touchez le cœur pour en ajouter.',
         ),
       ],
     );

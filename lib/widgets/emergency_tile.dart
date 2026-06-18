@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/app_theme.dart';
+import 'icon_pastille.dart';
 
 class EmergencyTile extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -104,18 +105,13 @@ class EmergencyTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _background,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(
-                _icon,
-                color: _color,
-                size: 22,
-              ),
+            IconPastille(
+              icon: _icon,
+              color: _color,
+              background: _background,
+              size: 44,
+              radius: 13,
+              iconSize: 22,
             ),
 
             const SizedBox(width: 13),

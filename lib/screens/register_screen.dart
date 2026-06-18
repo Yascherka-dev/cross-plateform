@@ -71,14 +71,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Créer mon compte', style: AppTheme.titre(24)),
-                const SizedBox(height: AppTheme.spacingSm),
-                Text(
-                  'Quelques secondes suffisent.',
-                  style: AppTheme.body(
-                    size: 13,
-                    color: AppTheme.texteSecondaire,
-                  ),
+                const AuthHeader(
+                  title: 'Créer mon compte',
+                  subtitle: 'Quelques secondes suffisent.',
                 ),
                 const SizedBox(height: AppTheme.spacingXxl),
 
@@ -87,14 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   label: 'Email',
                   hint: 'vous@exemple.fr',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    final value = v?.trim() ?? '';
-                    if (value.isEmpty) return 'Email requis';
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Adresse email invalide';
-                    }
-                    return null;
-                  },
+                  validator: validerEmail,
                 ),
                 const SizedBox(height: AppTheme.spacingLg),
 
@@ -139,30 +127,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: AppTheme.spacingXxl),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _creerCompte,
-                    child: _loading
-                        ? const AuthButtonLoader()
-                        : const Text('Créer mon compte'),
-                  ),
+                AuthSubmitButton(
+                  label: 'Créer mon compte',
+                  loading: _loading,
+                  onPressed: _creerCompte,
                 ),
 
                 const SizedBox(height: AppTheme.spacingLg),
 
-                Center(
-                  child: TextButton(
-                    onPressed: _loading ? null : () => Navigator.pop(context),
-                    child: Text(
-                      'Déjà un compte ? Se connecter',
-                      style: AppTheme.body(
-                        size: 13,
-                        weight: FontWeight.w700,
-                        color: AppTheme.accent,
-                      ),
-                    ),
-                  ),
+                AuthLink(
+                  text: 'Déjà un compte ? Se connecter',
+                  onPressed: _loading ? null : () => Navigator.pop(context),
                 ),
               ],
             ),

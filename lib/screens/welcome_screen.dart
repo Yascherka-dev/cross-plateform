@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/auth_service.dart';
+import '../widgets/icon_pastille.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -138,14 +139,11 @@ class _Avantage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.parcFond,
-            borderRadius: BorderRadius.circular(AppTheme.radiusPetit),
-          ),
-          child: Icon(icon, color: AppTheme.parcTexte, size: 20),
+        IconPastille(
+          icon: icon,
+          color: AppTheme.parcTexte,
+          background: AppTheme.parcFond,
+          size: 40,
         ),
         const SizedBox(width: AppTheme.spacingMd),
         Expanded(

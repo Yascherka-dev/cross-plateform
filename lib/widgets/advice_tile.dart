@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../logic/heat_risk_level.dart';
 import '../models/advice_card.dart';
+import 'icon_pastille.dart';
 
 const Set<String> _illustrationsAvecTexte = {
   'signes de vigilance',
@@ -190,14 +191,10 @@ class AdviceTile extends StatelessWidget {
             collapsedIconColor: AppTheme.texteSecondaire,
             title: Row(
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: _levelBackground,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusPetit),
-                  ),
-                  child: Icon(_icon, color: _levelColor, size: 20),
+                IconPastille(
+                  icon: _icon,
+                  color: _levelColor,
+                  background: _levelBackground,
                 ),
                 const SizedBox(width: 13),
                 Expanded(

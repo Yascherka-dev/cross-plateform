@@ -12,6 +12,8 @@ import '../services/fresh_spot_service.dart';
 import '../services/supabase_service.dart';
 import '../widgets/risk_banner.dart';
 import '../widgets/fresh_spot_tile.dart';
+import '../widgets/icon_pastille.dart';
+import '../widgets/message_etat.dart';
 import 'map_screen.dart';
 import 'advice_screen.dart';
 import 'emergency_screen.dart';
@@ -201,48 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: AppTheme.fond,
         surfaceTintColor: Colors.transparent,
         titleSpacing: AppTheme.spacingLg,
-        title: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppTheme.accent,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.asset(
-                'assets/images/logo48.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) {
-                  return const Icon(
-                    Icons.wb_sunny_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 11),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SOS Canicule',
-                  style: AppTheme.titre(16),
-                ),
-                Text(
-                  'Paris · à l’instant',
-                  style: AppTheme.label(
-                    size: 10.5,
-                    color: AppTheme.texteSecondaire,
-                    weight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        title: const _AppBarTitre(),
         actions: [
           IconButton(
             icon: const Icon(Icons.favorite_border_rounded),
@@ -376,6 +337,54 @@ class _AccountAction extends StatelessWidget {
   }
 }
 
+// Titre de l'AppBar de l'accueil : logo + nom + localisation.
+class _AppBarTitre extends StatelessWidget {
+  const _AppBarTitre();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: AppTheme.accent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Image.asset(
+            'assets/images/logo48.png',
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) {
+              return const Icon(
+                Icons.wb_sunny_rounded,
+                color: Colors.white,
+                size: 18,
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 11),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('SOS Canicule', style: AppTheme.titre(16)),
+            Text(
+              'Paris · à l’instant',
+              style: AppTheme.label(
+                size: 10.5,
+                color: AppTheme.texteSecondaire,
+                weight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _HydrationReminder extends StatelessWidget {
   const _HydrationReminder();
 
@@ -394,18 +403,10 @@ class _HydrationReminder extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppTheme.fontaineFond,
-              borderRadius: BorderRadius.circular(AppTheme.radiusPetit),
-            ),
-            child: const Icon(
-              Icons.water_drop_rounded,
-              color: AppTheme.fontaineTexte,
-              size: 20,
-            ),
+          const IconPastille(
+            icon: Icons.water_drop_rounded,
+            color: AppTheme.fontaineTexte,
+            background: AppTheme.fontaineFond,
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -565,18 +566,12 @@ class _QuickActionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 20,
-              ),
+            IconPastille(
+              icon: icon,
+              color: iconColor,
+              background: iconBackground,
+              size: 36,
+              radius: 10,
             ),
             const SizedBox(width: 13),
             Expanded(
@@ -696,29 +691,13 @@ class _ErrorState extends StatelessWidget {
             border: Border.all(color: AppTheme.bordure),
             boxShadow: AppTheme.ombreBase,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.location_off_rounded,
-                size: 56,
-                color: AppTheme.rougeTexte,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: AppTheme.body(
-                  size: 14,
-                  color: AppTheme.texteSurface,
-                ),
-              ),
-              const SizedBox(height: 22),
-              ElevatedButton(
-                onPressed: onRetry,
-                child: const Text('Réessayer'),
-              ),
-            ],
+          child: MessageEtat(
+            icon: Icons.location_off_rounded,
+            iconColor: AppTheme.rougeTexte,
+            message: message,
+            messageColor: AppTheme.texteSurface,
+            actionLabel: 'Réessayer',
+            onAction: onRetry,
           ),
         ),
       ),

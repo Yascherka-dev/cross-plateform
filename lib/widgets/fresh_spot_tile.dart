@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
+import 'icon_pastille.dart';
 
 class FreshSpotTile extends StatelessWidget {
   final FreshSpot spot;
@@ -23,18 +24,10 @@ class FreshSpotTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: spot.type.background,
-              borderRadius: BorderRadius.circular(AppTheme.radiusPetit),
-            ),
-            child: Icon(
-              spot.type.icon,
-              color: spot.type.color,
-              size: 20,
-            ),
+          IconPastille(
+            icon: spot.type.icon,
+            color: spot.type.color,
+            background: spot.type.background,
           ),
           const SizedBox(width: 13),
           Expanded(

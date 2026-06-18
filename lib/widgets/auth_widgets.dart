@@ -5,6 +5,89 @@ import '../config/app_theme.dart';
 // Composants d'UI partagés entre les écrans Login et Register,
 // stylés selon la DA (AppTheme, Hanken Grotesk, palette terre).
 
+// Validateur email partagé par les formulaires d'authentification.
+String? validerEmail(String? v) {
+  final value = v?.trim() ?? '';
+  if (value.isEmpty) return 'Email requis';
+  if (!value.contains('@') || !value.contains('.')) {
+    return 'Adresse email invalide';
+  }
+  return null;
+}
+
+// En-tête d'écran d'auth : titre + sous-titre.
+class AuthHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const AuthHeader({super.key, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTheme.titre(24)),
+        const SizedBox(height: AppTheme.spacingSm),
+        Text(
+          subtitle,
+          style: AppTheme.body(size: 13, color: AppTheme.texteSecondaire),
+        ),
+      ],
+    );
+  }
+}
+
+// Bouton principal d'auth pleine largeur, avec loader pendant l'appel réseau.
+class AuthSubmitButton extends StatelessWidget {
+  final String label;
+  final bool loading;
+  final VoidCallback onPressed;
+
+  const AuthSubmitButton({
+    super.key,
+    required this.label,
+    required this.loading,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: loading ? null : onPressed,
+        child: loading ? const AuthButtonLoader() : Text(label),
+      ),
+    );
+  }
+}
+
+// Lien secondaire centré (bascule login/register).
+class AuthLink extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+
+  const AuthLink({super.key, required this.text, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: onPressed,
+        child: Text(
+          text,
+          style: AppTheme.body(
+            size: 13,
+            weight: FontWeight.w700,
+            color: AppTheme.accent,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Champ de formulaire stylé.
 class AuthField extends StatelessWidget {
   final TextEditingController controller;
