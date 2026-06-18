@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'config/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'screens/welcome_screen.dart';
+import 'services/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +28,11 @@ class SosCaniculeApp extends StatelessWidget {
       title: 'SOS Canicule',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const HomeScreen(),
+      // Déjà connecté → HomeScreen directement ; sinon → écran d'accueil.
+      // L'accès reste libre : "Continuer sans compte" mène à une app complète.
+      home: AuthService().currentUser != null
+          ? const HomeScreen()
+          : const WelcomeScreen(),
     );
   }
 }
