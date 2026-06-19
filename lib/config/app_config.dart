@@ -1,23 +1,8 @@
 // Fichier de configuration central de l'app
-// Toutes les URLs, clés et constantes sont ici
-// → si une URL change, on ne modifie qu'un seul endroit
+// Regroupe les constantes OpenData Paris (URLs des datasets, limites) et le
+// cache associé. NB : l'URL Open-Meteo vit dans weather_service.dart.
 
 class AppConfig {
-
-  // API OPEN-METEO
-  // -------------------------
-  // MAJ des data "current" toutes les 15 minutes
-  static const String openMeteoBaseUrl =
-      'https://api.open-meteo.com/v1/forecast';
-
-  // Paramètres fixes demandés à chaque appel Open-Meteo
-  // latitude et longitude sont ajoutés dynamiquement dans WeatherService
-  static const String openMeteoParams =
-      '&current=temperature_2m,apparent_temperature,'
-      'relative_humidity_2m,uv_index,weathercode,windspeed_10m'
-      '&hourly=temperature_2m,uv_index'
-      '&timezone=auto'
-      '&forecast_days=1';
 
   // -------------------------
   // API OPENDATA PARIS — Îlots de fraîcheur
@@ -48,33 +33,13 @@ class AppConfig {
   // 100 couvre largement les points autour de l'utilisateur
   static const int openDataLimit = 100;
 
-  // -------------------------
-  // CACHE
-  // -------------------------
-  // Durée de validité du cache météo
-  // Open-Meteo met à jour les données "current" toutes les 15 min
-  static const Duration weatherCacheDuration = Duration(minutes: 15);
-
   // Durée de validité du cache OpenData Paris
   // Les fontaines/parcs ne changent pas souvent → 1h est suffisant
   static const Duration freshSpotCacheDuration = Duration(hours: 1);
 
-  // -------------------------
-  // NUMÉROS D'URGENCE
-  // -------------------------
-  // Centralisés ici pour pouvoir les modifier facilement
-  static const String numeroSamu     = '15';
-  static const String numeroPompiers = '18';
-
-  // -------------------------
-  // SEUILS HEATRISKLEVEL
-  // -------------------------
-  // Centralisés ici pour être cohérents entre la logique métier
-  // et l'affichage des légendes dans l'UI
-  static const double seuilOrangeTemp = 30.0;
-  static const double seuilRougeTemp  = 35.0;
-  static const double seuilOrangeUv   = 6.0;
-  static const double seuilRougeUv    = 8.0;
-  static const int    seuilHumidite1  = 60; // +1°C effectif
-  static const int    seuilHumidite2  = 70; // +2°C effectif
+  // NOTE — Les seuils de risque (heat_thresholds) et les numéros d'urgence
+  // (emergency_numbers) sont désormais lus depuis Supabase, avec un fallback
+  // local dans heat_risk_level.dart et supabase_service.emergencyFallback.
+  // Les constantes correspondantes ont été retirées d'ici pour éviter un
+  // doublon obsolète.
 }
