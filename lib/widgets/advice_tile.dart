@@ -5,38 +5,6 @@ import '../logic/heat_risk_level.dart';
 import '../models/advice_card.dart';
 import 'icon_pastille.dart';
 
-const Set<String> _illustrationsAvecTexte = {
-  'signes de vigilance',
-  'numeros durgence',
-  'que faire en cas de coup de chaleur',
-  'signes dinsolation',
-};
-
-String _normaliserTitre(String s) {
-  var r = s.toLowerCase().trim();
-
-  const accents = {
-    'é': 'e',
-    'è': 'e',
-    'ê': 'e',
-    'ë': 'e',
-    'à': 'a',
-    'â': 'a',
-    'î': 'i',
-    'ï': 'i',
-    'ô': 'o',
-    'û': 'u',
-    'ù': 'u',
-    'ç': 'c',
-  };
-
-  accents.forEach((k, v) => r = r.replaceAll(k, v));
-  r = r.replaceAll(RegExp(r'[^a-z0-9 ]'), '');
-  r = r.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-  return r;
-}
-
 class AdviceTile extends StatelessWidget {
   final AdviceCard card;
 
@@ -78,19 +46,16 @@ class AdviceTile extends StatelessWidget {
   List<Widget> _contenuDeplie() {
     final imageUrl = card.imageUrl;
     final aImage = imageUrl != null && imageUrl.isNotEmpty;
-    final avecTexte = _illustrationsAvecTexte.contains(
-      _normaliserTitre(card.titre),
-    );
-    final montrerTexte = !aImage || !avecTexte;
 
     return [
+      // L'image reste illustrative ; le texte des conseils est toujours affiché.
       if (aImage)
         Padding(
-          padding: EdgeInsets.fromLTRB(
+          padding: const EdgeInsets.fromLTRB(
             AppTheme.spacingLg,
             0,
             AppTheme.spacingLg,
-            montrerTexte ? AppTheme.spacingMd : AppTheme.spacingLg,
+            AppTheme.spacingMd,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppTheme.radiusCarteSmall),
@@ -109,14 +74,11 @@ class AdviceTile extends StatelessWidget {
                   child: CircularProgressIndicator(color: _levelColor),
                 );
               },
-              errorBuilder: (_, _, _) {
-                if (montrerTexte) return const SizedBox.shrink();
-                return _listeConseils();
-              },
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
           ),
         ),
-      if (montrerTexte) _listeConseils(),
+      _listeConseils(),
     ];
   }
 
