@@ -4,6 +4,7 @@ import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
 import '../services/auth_service.dart';
 import '../services/favoris_service.dart';
+import '../services/share_service.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/fresh_spot_tile.dart';
 import '../widgets/message_etat.dart';
@@ -95,8 +96,16 @@ class _FavorisScreenState extends State<FavorisScreen> {
                             Expanded(child: FreshSpotTile(spot: spot)),
                             const SizedBox(width: AppTheme.spacingSm),
                             RoundIconButton(
+                              icon: Icons.share_rounded,
+                              color: AppTheme.texteSurface,
+                              tooltip: 'Partager',
+                              onTap: () => partagerSpot(spot),
+                            ),
+                            const SizedBox(width: AppTheme.spacingSm),
+                            RoundIconButton(
                               icon: Icons.favorite_rounded,
                               color: AppTheme.rougeTexte,
+                              tooltip: 'Retirer des favoris',
                               onTap: () => _retirer(spot),
                             ),
                           ],

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../config/app_theme.dart';
 import '../models/fresh_spot.dart';
 import '../services/auth_service.dart';
 import '../services/favoris_service.dart';
+import '../services/share_service.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/icon_pastille.dart';
 import '../widgets/round_icon_button.dart';
@@ -361,14 +361,7 @@ class _SpotBottomSheetState extends State<_SpotBottomSheet> {
   }
 
   // Partage texte (fonctionne sans connexion).
-  Future<void> _partager() async {
-    final texte =
-        '${spot.nom} - ${spot.type.label} - ${spot.adresseFormatee}\n'
-        '📍 Lien Google Maps: https://www.google.com/maps/dir/?api=1'
-        '&destination=${spot.latitude},${spot.longitude}\n'
-        'Trouvé sur SOS Canicule 🌡️';
-    await SharePlus.instance.share(ShareParams(text: texte));
-  }
+  Future<void> _partager() => partagerSpot(spot);
 
   void _inviterConnexion() {
     showDialog<void>(
